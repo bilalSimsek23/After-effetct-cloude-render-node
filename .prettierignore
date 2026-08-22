@@ -1,0 +1,7 @@
+dist
+node_modules
+
+# Adobe ExtendScript files — share the .jsx extension by convention but are
+# not React/JS; the `#include` directive isn't valid JS syntax, so
+# prettier's parser can't handle them.
+src/jsx/*.jsx

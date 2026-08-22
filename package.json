@@ -1,0 +1,49 @@
+{
+  "name": "pratiktools-render-node",
+  "version": "0.1.0",
+  "description": "PratikTools Cloud Rendering Render Node (Agent) — sends heartbeats and receives render jobs pushed by Laravel via a Cloudflare Tunnel.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "start": "node dist/main.js",
+    "setup:mac": "bash scripts/setup-mac.sh",
+    "setup:windows": "powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1",
+    "configure": "node scripts/configure.mjs",
+    "check:adobe": "tsx src/adobe-check.ts",
+    "check:dependency": "tsx src/dependency-check.ts",
+    "check:contracts": "tsx src/contracts-check.ts",
+    "check:capabilities": "tsx src/capabilities-check.ts",
+    "check:preparation": "tsx src/preparation-check.ts",
+    "check:phase3a": "tsx src/phase-3a-check.ts",
+    "check:execution": "tsx src/execution-check.ts",
+    "check:scheduler": "tsx src/scheduler-check.ts",
+    "check:orchestrator": "tsx src/orchestrator-check.ts",
+    "check:render": "tsx src/render-check.ts",
+    "check:variables": "tsx src/manual-variable-check.ts",
+    "check:render:manual": "tsx src/manual-render-check.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0"
+  }
+}

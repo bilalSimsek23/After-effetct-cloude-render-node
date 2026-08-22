@@ -1,0 +1,43 @@
+{
+  "server": "https://motioncurate.com",
+  "nodeUuid": "CHANGE_ME",
+  "apiSecret": "CHANGE_ME",
+  "nodeName": "Mac Mini M4 #1",
+  "heartbeatInterval": 30,
+  "maxConcurrentJobs": 1,
+  "agentVersion": "1.0.0",
+  "engine": "after-effects",
+  "supportedEngines": ["after-effects"],
+  "pushServer": {
+    "port": 4790,
+    "tunnelToken": "CHANGE_ME"
+  },
+  "renderProfiles": {
+    "preview": {
+      "name": "Preview",
+      "watermarkEnabled": true,
+      "isActive": true,
+      "rendererSettings": {
+        "adobeOutputModuleTemplate": "H.264 - Match Render Settings -  5 Mbps",
+        "watermarkText": "PRATIKTOOLS ÖNİZLEME",
+        "resolutionFactor": "Half"
+      }
+    },
+    "master": {
+      "name": "Master",
+      "watermarkEnabled": false,
+      "isActive": true,
+      "rendererSettings": {
+        "adobeOutputModuleTemplate": "H.264 - Match Render Settings - 40 Mbps"
+      }
+    },
+    "alpha": {
+      "name": "Alpha",
+      "watermarkEnabled": false,
+      "isActive": true,
+      "rendererSettings": {
+        "adobeOutputModuleTemplate": "High Quality with Alpha"
+      }
+    }
+  }
+}
