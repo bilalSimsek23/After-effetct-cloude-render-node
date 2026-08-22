@@ -8,7 +8,7 @@
  *
  * All paths carry an explicit `/api` prefix (matching api-endpoints.ts's
  * own convention) - `config.server` is the bare origin (e.g.
- * "https://pratiktools.com"), never including `/api` itself, since
+ * "https://motioncurate.com"), never including `/api` itself, since
  * Laravel's own `routes/api.php` is mounted under that prefix by the
  * framework (bootstrap/app.php's withRouting(api: ...)).
  *
