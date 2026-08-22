@@ -1,6 +1,6 @@
 # Render Node Kurulumu
 
-Bu doküman, yeni bir makineyi (Mac veya Windows) PratikTools Cloud Render için render node olarak hazırlamanın tam adımlarını anlatır.
+Bu doküman, yeni bir makineyi (Mac veya Windows) MotionCurate Cloud Render için render node olarak hazırlamanın tam adımlarını anlatır.
 
 ## 1. Otomatik kurulum script'ini çalıştır
 

@@ -1,6 +1,6 @@
 # Faz 6 — Distributed Render Broker, Scheduler & Execution Orchestrator
 
-Bu fazın amacı gerçek render almak değildi — amaç, PratikTools Cloud Render'ı tek-node mantığından gerçek bir dağıtık (Render Farm) mimarisine taşıyan **merkezi bir Render Broker katmanı** kurmaktı. Faz 1–5'te oluşturulan hiçbir şey (Contract Layer, Capability Registry, Adobe Runtime, Dependency Package, Project Preparation, Execution Pipeline) değiştirilmedi — bu faz tamamen yeni, bağımsız bir `src/broker/` modülü ekledi.
+Bu fazın amacı gerçek render almak değildi — amaç, MotionCurate Cloud Render'ı tek-node mantığından gerçek bir dağıtık (Render Farm) mimarisine taşıyan **merkezi bir Render Broker katmanı** kurmaktı. Faz 1–5'te oluşturulan hiçbir şey (Contract Layer, Capability Registry, Adobe Runtime, Dependency Package, Project Preparation, Execution Pipeline) değiştirilmedi — bu faz tamamen yeni, bağımsız bir `src/broker/` modülü ekledi.
 
 Mimari diyagramın "Laravel içinde" gösterdiği Render Broker, gerçek bir Laravel API henüz var olmadığı için (kurulan her fazda olduğu gibi) bu repoda **TypeScript ile, gerçek ve tam çalışan bir referans implementasyonu** olarak inşa edildi — `npm run check:scheduler` en az 4 sanal Render Node ile gerçek bir simülasyon çalıştırıyor (mock değil, gerçek karar mantığı).
 

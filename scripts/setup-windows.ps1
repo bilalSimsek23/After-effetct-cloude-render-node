@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 
-Write-Host "== PratikTools Render Node Kurulumu (Windows) ==" -ForegroundColor Cyan
+Write-Host "== MotionCurate Render Node Kurulumu (Windows) ==" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {

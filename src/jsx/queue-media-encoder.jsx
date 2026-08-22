@@ -95,7 +95,7 @@
     try {
       var watermarkLayer = comp.layers.addText(payload.watermarkText);
       watermarkLayer.moveToBeginning();
-      watermarkLayer.name = 'PratikTools Watermark';
+      watermarkLayer.name = 'MotionCurate Watermark';
 
       var textProp = watermarkLayer.property('Source Text');
       var textDocument = textProp.value;

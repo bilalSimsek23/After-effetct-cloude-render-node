@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "== PratikTools Render Node Kurulumu (macOS) =="
+echo "== MotionCurate Render Node Kurulumu (macOS) =="
 echo ""
 
 if ! command -v brew >/dev/null 2>&1; then

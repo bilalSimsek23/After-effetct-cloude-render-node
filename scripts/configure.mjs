@@ -44,7 +44,7 @@ async function ask(rl, question, defaultValue) {
 async function main() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log('== PratikTools Render Node - config.json Kurulumu ==\n');
+  console.log('== MotionCurate Render Node - config.json Kurulumu ==\n');
 
   const aeFound = detectAfterEffects();
   if (aeFound === false) {

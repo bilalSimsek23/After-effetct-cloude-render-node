@@ -41,12 +41,12 @@ export interface JobWorkspacePaths {
   assets: string;
 }
 
-const APP_SUPPORT_FOLDER_NAME = 'PratikTools Render Node';
+const APP_SUPPORT_FOLDER_NAME = 'MotionCurate Render Node';
 const DEFAULT_MAX_JOB_WORKSPACE_AGE_MS = 24 * 60 * 60 * 1000; // 24h
 
 /**
  * Owns Render Node's own working directory under
- * ~/Library/Application Support/PratikTools Render Node/ — never the
+ * ~/Library/Application Support/MotionCurate Render Node/ — never the
  * Desktop.
  *
  * Two layers:

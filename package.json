@@ -1,7 +1,7 @@
 {
   "name": "pratiktools-render-node",
   "version": "0.1.0",
-  "description": "PratikTools Cloud Rendering Render Node (Agent) — sends heartbeats and receives render jobs pushed by Laravel via a Cloudflare Tunnel.",
+  "description": "MotionCurate Cloud Rendering Render Node (Agent) — sends heartbeats and receives render jobs pushed by Laravel via a Cloudflare Tunnel.",
   "private": true,
   "type": "module",
   "engines": {
