@@ -87,6 +87,12 @@ async function main() {
       : '',
   );
   const maxJobs = await ask(rl, 'Maksimum eşzamanlı iş sayısı', String(existing.maxConcurrentJobs || 1));
+  const autoUpdateAnswer = await ask(
+    rl,
+    "Otomatik güncelleme aktif olsun mu? (GitHub'daki main branch'i periyodik kontrol edip, node boştayken kendini günceller) [evet/hayır]",
+    existing.autoUpdate?.enabled === false ? 'hayır' : 'evet',
+  );
+  const autoUpdateEnabled = !/^h/i.test(autoUpdateAnswer.trim());
 
   rl.close();
 
@@ -100,6 +106,11 @@ async function main() {
     agentVersion: existing.agentVersion || '1.0.0',
     engine: 'after-effects',
     supportedEngines: ['after-effects'],
+    autoUpdate: {
+      enabled: autoUpdateEnabled,
+      checkIntervalMinutes: existing.autoUpdate?.checkIntervalMinutes || 60,
+      branch: existing.autoUpdate?.branch || 'main',
+    },
     pushServer: {
       port: parseInt(pushPort, 10) || 4790,
       tunnelToken,

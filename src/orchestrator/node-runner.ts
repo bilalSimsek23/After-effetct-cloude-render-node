@@ -2,6 +2,7 @@ import { SystemReadyStatus } from '../types/system-status.types.js';
 import type { NodeRegistrationService } from './node-registration.service.js';
 import type { HeartbeatLoop } from './heartbeat-loop.js';
 import type { CapabilityLoop } from './capability-loop.js';
+import type { SelfUpdateLoop } from './self-update-loop.js';
 import type { PushServer } from './push-server.js';
 import type { ITunnelService } from './cloudflare-tunnel.service.js';
 import type { IHealthService } from '../services/health.service.js';
@@ -30,6 +31,7 @@ export class NodeRunner {
     private readonly nodeRegistrationService: NodeRegistrationService,
     private readonly heartbeatLoop: HeartbeatLoop,
     private readonly capabilityLoop: CapabilityLoop,
+    private readonly selfUpdateLoop: SelfUpdateLoop,
     private readonly cloudflareTunnel: ITunnelService,
     private readonly pushServer: PushServer,
     private readonly healthService: IHealthService,
@@ -45,6 +47,7 @@ export class NodeRunner {
 
     this.heartbeatLoop.start();
     this.capabilityLoop.start();
+    this.selfUpdateLoop.start();
     // Tunnel must be up before the push server starts accepting requests
     // through it - Laravel's callback_url only resolves once the tunnel
     // has registered its connection with Cloudflare's edge.
@@ -71,6 +74,7 @@ export class NodeRunner {
     await this.cloudflareTunnel.stop();
     this.heartbeatLoop.stop();
     this.capabilityLoop.stop();
+    this.selfUpdateLoop.stop();
     // disposeAdobeSessions() → AdobeRuntime.shutdown() (shutdown() already
     // disposes every active AdobeSession itself, first thing it does — see
     // Phase 2/3's AdobeRuntimeService, untouched — so there is no separate

@@ -119,6 +119,29 @@ export class ConfigLoader {
       }
     }
 
+    const autoUpdate = config.autoUpdate;
+    if (autoUpdate !== undefined) {
+      if (typeof autoUpdate !== 'object' || autoUpdate === null) {
+        errors.push('"autoUpdate" alanı tanımlıysa bir nesne olmalı ({ enabled, checkIntervalMinutes?, branch? }).');
+      } else {
+        const au = autoUpdate as Record<string, unknown>;
+        if (typeof au.enabled !== 'boolean') {
+          errors.push('"autoUpdate.enabled" alanı bir boolean olmalı.');
+        }
+        if (
+          au.checkIntervalMinutes !== undefined &&
+          (typeof au.checkIntervalMinutes !== 'number' ||
+            Number.isNaN(au.checkIntervalMinutes) ||
+            au.checkIntervalMinutes <= 0)
+        ) {
+          errors.push('"autoUpdate.checkIntervalMinutes" alanı tanımlıysa pozitif bir sayı olmalı.');
+        }
+        if (au.branch !== undefined && (typeof au.branch !== 'string' || au.branch === '')) {
+          errors.push('"autoUpdate.branch" alanı tanımlıysa boş olmayan bir string olmalı.');
+        }
+      }
+    }
+
     if (errors.length > 0) {
       throw new ConfigLoadError(`Config dosyası geçersiz:\n- ${errors.join('\n- ')}`);
     }

@@ -8,6 +8,11 @@
   "agentVersion": "1.0.0",
   "engine": "after-effects",
   "supportedEngines": ["after-effects"],
+  "autoUpdate": {
+    "enabled": true,
+    "checkIntervalMinutes": 60,
+    "branch": "main"
+  },
   "pushServer": {
     "port": 4790,
     "tunnelToken": "CHANGE_ME"

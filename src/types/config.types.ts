@@ -43,6 +43,22 @@ export interface RenderNodeConfig {
    * run once per node during setup; the resulting hostname is what an admin
    * passes as --callback-url when registering this node with Laravel.
    */
+  /**
+   * Fleet-wide auto-update (SelfUpdateLoop): periodically fetches
+   * `branch` from the node's own git remote and, when idle, pulls +
+   * rebuilds + exits so launchd relaunches it on the new code. Optional
+   * and off by default — absent entirely, or `enabled: false`, means no
+   * update loop runs at all, so existing config.json files (and any node
+   * that was set up by copying the folder rather than `git clone`, which
+   * has no git remote to pull from) keep working completely unchanged.
+   */
+  autoUpdate?: {
+    enabled: boolean;
+    /** Default 60 if omitted. */
+    checkIntervalMinutes?: number;
+    /** Default "main" if omitted. */
+    branch?: string;
+  };
   pushServer: {
     port: number;
     tunnelToken: string;

@@ -90,6 +90,7 @@ import type { IUploadService } from './services/upload.service.js';
 import { NodeRegistrationService } from './orchestrator/node-registration.service.js';
 import { HeartbeatLoop } from './orchestrator/heartbeat-loop.js';
 import { CapabilityLoop } from './orchestrator/capability-loop.js';
+import { SelfUpdateLoop } from './orchestrator/self-update-loop.js';
 import { ProgressForwarder } from './orchestrator/progress-forwarder.js';
 import { ResultForwarder } from './orchestrator/result-forwarder.js';
 import { JobProcessor } from './orchestrator/job-processor.js';
@@ -577,11 +578,19 @@ async function run(): Promise<void> {
 
   const tunnel = new NoOpTunnelService();
   const pushServer = new PushServer(config, jobProcessor, logger);
+  // Disabled here - this script spins up its own short-lived mock server
+  // and has no real git remote to check against.
+  const selfUpdateLoop = new SelfUpdateLoop(
+    jobProcessor,
+    { enabled: false, checkIntervalMinutes: 60, branch: 'main' },
+    logger,
+  );
 
   const nodeRunner = new NodeRunner(
     nodeRegistrationService,
     heartbeatLoop,
     capabilityLoop,
+    selfUpdateLoop,
     tunnel,
     pushServer,
     healthService,

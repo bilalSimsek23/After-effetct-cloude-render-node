@@ -62,6 +62,7 @@ import { UploadService } from './services/upload.service.js';
 import { NodeRegistrationService } from './orchestrator/node-registration.service.js';
 import { HeartbeatLoop } from './orchestrator/heartbeat-loop.js';
 import { CapabilityLoop } from './orchestrator/capability-loop.js';
+import { SelfUpdateLoop } from './orchestrator/self-update-loop.js';
 import { ProgressForwarder } from './orchestrator/progress-forwarder.js';
 import { ResultForwarder } from './orchestrator/result-forwarder.js';
 import { JobProcessor } from './orchestrator/job-processor.js';
@@ -260,6 +261,16 @@ async function bootstrap(): Promise<void> {
 
   const capabilityLoop = new CapabilityLoop(capabilityRegistry, logger);
 
+  const selfUpdateLoop = new SelfUpdateLoop(
+    jobProcessor,
+    {
+      enabled: config.autoUpdate?.enabled ?? false,
+      checkIntervalMinutes: config.autoUpdate?.checkIntervalMinutes ?? 60,
+      branch: config.autoUpdate?.branch ?? 'main',
+    },
+    logger,
+  );
+
   const nodeRegistrationService = new NodeRegistrationService(
     adobeRuntimeService,
     capabilityRegistry,
@@ -284,6 +295,7 @@ async function bootstrap(): Promise<void> {
     nodeRegistrationService,
     heartbeatLoop,
     capabilityLoop,
+    selfUpdateLoop,
     cloudflareTunnel,
     pushServer,
     healthService,

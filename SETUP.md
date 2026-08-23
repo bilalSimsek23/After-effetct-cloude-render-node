@@ -4,7 +4,14 @@ Bu doküman, yeni bir makineyi (Mac veya Windows) MotionCurate Cloud Render içi
 
 ## 1. Otomatik kurulum script'ini çalıştır
 
-Proje klasörünü hedef makineye kopyala, sonra:
+Proje klasörünü **git clone ile** hedef makineye getir (dosyaları elle kopyalama — repo public, otomatik güncelleme (bkz. adım 1b) bu klasörün gerçek bir git deposu olmasını gerektiriyor):
+
+```bash
+git clone https://github.com/bilalSimsek23/After-effetct-cloude-render-node.git pratiktools-render-node
+cd pratiktools-render-node
+```
+
+Sonra:
 
 **macOS:**
 ```bash
@@ -22,6 +29,16 @@ Bu script:
 - `config.json`'ı interaktif olarak doldurur (aşağıdaki 2. ve 3. adımlardaki bilgileri isteyecek)
 
 Script sana `nodeUuid`, `apiSecret` ve `tunnelToken` soracak — bunları henüz almadıysan boş geçip aşağıdaki adımları tamamladıktan sonra script'i tekrar çalıştırabilir ya da `config.json`'ı elle düzenleyebilirsin.
+
+## 1b. Otomatik güncelleme (fleet-wide auto-update)
+
+Kurulum sırasında script "Otomatik güncelleme aktif olsun mu?" diye soracak. Evet dersen (varsayılan), node periyodik olarak (varsayılan 60 dakikada bir) bu reponun `main` branch'ini kontrol eder; yeni bir commit varsa ve node o an boştaysa (aktif render job'ı yoksa) `git pull --ff-only` + `npm install` + `npm run build` yapıp kendini kapatır — `com.pratiktools.render-node.plist`'teki `KeepAlive` sayesinde launchd onu yeni koda otomatik olarak yeniden başlatır. Build başarısız olursa node otomatik olarak önceki çalışan commit'e geri döner (rollback), asla bozuk bir sürümde takılı kalmaz.
+
+Bu, `config.json`'daki `autoUpdate` alanıyla kontrol edilir:
+```json
+"autoUpdate": { "enabled": true, "checkIntervalMinutes": 60, "branch": "main" }
+```
+Kapatmak istersen `enabled: false` yap veya alanı tamamen sil.
 
 ## 2. Cloudflare Tunnel oluştur (bir kere, panelden)
 
@@ -67,3 +84,4 @@ Terminalde şunları görmelisin: Adobe Runtime hazır → capability toplandı 
 - **Push bildirimi hiç gelmiyor:** Cloudflare panelinde tünelin "Healthy" göründüğünü, Public Hostname'in doğru porta işaret ettiğini kontrol et.
 - **401 RENDER_NODE_UNAUTHORIZED:** `config.json`'daki `nodeUuid`/`apiSecret` production'daki kayıtla eşleşmiyor olabilir — `cloud-render:register-render-node --uuid=<uuid>` ile secret'ı rotate edip güncelle.
 - **After Effects bulunamadı:** Render node çalışabilir ama gerçek render işi başarısız olur — hedef makinede After Effects kurulu ve lisanslı olmalı.
+- **Otomatik güncelleme çalışmıyor:** `logs/` altında "Self-update" ile başlayan satırları kontrol et. En sık sebep: klasör `git clone` değil elle kopyalanmış (git remote'u yok) - bu durumda `git remote -v` boş döner, klasörü yeniden `git clone` ile kurman gerekir.
