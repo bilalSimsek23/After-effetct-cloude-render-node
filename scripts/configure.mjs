@@ -63,20 +63,74 @@ async function main() {
   }
 
   const server = await ask(rl, 'Laravel server URL', existing.server || 'https://motioncurate.com');
-  const nodeUuid = await ask(
-    rl,
-    "Node UUID (php artisan cloud-render:register-render-node çıktısından)",
-    existing.nodeUuid && existing.nodeUuid !== 'CHANGE_ME' ? existing.nodeUuid : '',
-  );
-  const apiSecret = await ask(
-    rl,
-    'API Secret (aynı komutun çıktısından)',
-    existing.apiSecret && existing.apiSecret !== 'CHANGE_ME' ? existing.apiSecret : '',
-  );
+
+  const alreadyHasCredentials =
+    existing.nodeUuid && existing.nodeUuid !== 'CHANGE_ME' && existing.apiSecret && existing.apiSecret !== 'CHANGE_ME';
+
+  let nodeUuid = existing.nodeUuid && existing.nodeUuid !== 'CHANGE_ME' ? existing.nodeUuid : '';
+  let apiSecret = existing.apiSecret && existing.apiSecret !== 'CHANGE_ME' ? existing.apiSecret : '';
+  let registeredNodeName = null;
+
+  if (!alreadyHasCredentials) {
+    // Faz 2 (Author <-> Render Node Ownership) - self-service path. A
+    // registration token (from the MotionCurate author panel's "Render
+    // Node Ekle" button) replaces manually copy-pasting a UUID/secret an
+    // admin generated via `cloud-render:register-render-node` - that CLI
+    // path still works unchanged for platform-owned nodes (leave this
+    // blank and enter the UUID/secret manually below, same as before).
+    const registrationToken = await ask(
+      rl,
+      'Registration Token (author panelindeki "Render Node Ekle"den alınır - admin size UUID/Secret verdiyse boş bırakın)',
+      '',
+    );
+
+    if (registrationToken) {
+      const nodeName = await ask(rl, 'Node adı', existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`);
+
+      console.log('\nKayıt olunuyor...');
+      try {
+        const response = await fetch(`${server}/api/render-nodes/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ registrationToken, nodeName }),
+        });
+        const body = await response.json().catch(() => null);
+
+        if (!response.ok || !body?.nodeUuid || !body?.apiSecret) {
+          throw new Error(body?.message || `HTTP ${response.status}`);
+        }
+
+        nodeUuid = body.nodeUuid;
+        apiSecret = body.apiSecret;
+        registeredNodeName = nodeName;
+        console.log(`Kayıt başarılı - node UUID: ${nodeUuid}\n`);
+        // apiSecret is intentionally never logged here - it goes straight
+        // into config.json below.
+      } catch (error) {
+        console.error(`\n[HATA] Kayıt başarısız: ${error.message}`);
+        console.error('UUID/Secret alanlarını admin tarafından verilen değerlerle elle de girebilirsiniz.\n');
+      }
+    }
+  }
+
+  if (!nodeUuid) {
+    nodeUuid = await ask(
+      rl,
+      "Node UUID (php artisan cloud-render:register-render-node çıktısından)",
+      existing.nodeUuid && existing.nodeUuid !== 'CHANGE_ME' ? existing.nodeUuid : '',
+    );
+  }
+  if (!apiSecret) {
+    apiSecret = await ask(
+      rl,
+      'API Secret (aynı komutun çıktısından)',
+      existing.apiSecret && existing.apiSecret !== 'CHANGE_ME' ? existing.apiSecret : '',
+    );
+  }
   const nodeName = await ask(
     rl,
     'Node adı',
-    existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`,
+    registeredNodeName || existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`,
   );
   const pushPort = await ask(rl, 'Push server portu (Cloudflare Tunnel bunu hedefleyecek)', String(existing.pushServer?.port || 4790));
   const tunnelToken = await ask(

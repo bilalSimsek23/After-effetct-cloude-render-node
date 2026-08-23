@@ -59,7 +59,9 @@ Bu node'un `callback_url`'i artık `https://render-node-1.motioncurate.com/rende
 
 ## 3. Node'u Laravel'e kaydet
 
-Production'da (admin/SSH erişimi olan biri) şunu çalıştırır:
+**Author/community node (kendi makinenle katkıda bulunuyorsan):** admin komutuna ihtiyacın yok. MotionCurate author panelinde "Render Node'larım" → "Render Node Ekle" ile tek kullanımlık bir Registration Token al, sonra `npm run configure` çalıştırdığında sorulan "Registration Token" sorusuna bu token'ı yapıştır — `nodeUuid`/`apiSecret` otomatik olarak alınıp `config.json`'a yazılır, aşağıdaki admin adımını atlayabilirsin. Callback URL'i (bölüm 2'de kurduğun Cloudflare Tunnel hostname'i) daha sonra aynı panelden gireceksin — bir admin onayladıktan sonra node render işi almaya başlar.
+
+**Platform node (admin/SSH erişimi olan biri kaydediyorsa):**
 
 ```bash
 php artisan cloud-render:register-render-node \

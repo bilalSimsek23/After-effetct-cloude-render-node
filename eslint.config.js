@@ -26,12 +26,15 @@ export default tseslint.config(
   {
     // Standalone Node setup scripts (scripts/setup-*.sh call these), not
     // part of the TypeScript build - just need real Node globals so
-    // process/console don't trip no-undef.
+    // process/console don't trip no-undef. fetch added for Faz 2's
+    // self-service registration call in configure.mjs (Node 22 built-in,
+    // same global src/**/*.ts already relies on via tsconfig's lib).
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         process: 'readonly',
         console: 'readonly',
+        fetch: 'readonly',
       },
     },
   },
