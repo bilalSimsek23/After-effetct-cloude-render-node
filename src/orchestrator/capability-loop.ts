@@ -1,5 +1,6 @@
 import type { CapabilityRegistry } from '../capabilities/capability-registry.js';
 import type { CapabilityReportContract } from '../contracts/capability-report.contract.js';
+import type { ILaravelApiClient } from '../api/laravel-api.client.js';
 import type { Logger } from '../types/log.types.js';
 
 const DEFAULT_CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -19,12 +20,13 @@ export class CapabilityLoopNotStartedError extends Error {
  * profiles, engine) via CapabilityRegistry.compare(), never on a fixed
  * heartbeat cadence.
  *
- * Laravel has no capability-report endpoint yet (routes/api.php only
- * defines heartbeat/claim/payload/project-asset/dependency-package) - a
- * detected change is only logged for now, not sent, until that endpoint
- * exists. This is a known, deliberate gap (not silently pretending to sync
- * with a server that can't receive it), tracked separately from this
- * Render Node ↔ Laravel integration pass.
+ * Render Telemetry & Reliability Foundation — Laravel's capability-report
+ * endpoint now exists (POST /api/render-nodes/capability-report); a
+ * detected change (or the very first report, right after register()) is
+ * actually sent via ILaravelApiClient.sendCapabilityReport(), not just
+ * logged. A send failure never crashes the loop (same tolerant pattern as
+ * HeartbeatLoop) — it's logged, and the next tick tries again with
+ * whatever the registry has collected by then.
  */
 export class CapabilityLoop {
   private timer: NodeJS.Timeout | undefined;
@@ -33,6 +35,7 @@ export class CapabilityLoop {
 
   constructor(
     private readonly capabilityRegistry: CapabilityRegistry,
+    private readonly laravelApiClient: ILaravelApiClient,
     private readonly logger: Logger,
     private readonly checkIntervalMs: number = DEFAULT_CHECK_INTERVAL_MS,
   ) {}
@@ -42,7 +45,11 @@ export class CapabilityLoop {
     if (!alreadyCollected) {
       throw new CapabilityLoopNotStartedError();
     }
-    this.lastSentReport = alreadyCollected;
+
+    // Initial report — register() already collected it, but Laravel has
+    // never seen it yet (lastSentReport starts null on this node process).
+    void this.sendReport(alreadyCollected, ['*']);
+
     this.scheduleNext();
   }
 
@@ -66,15 +73,24 @@ export class CapabilityLoop {
       const comparison = this.capabilityRegistry.compare(this.lastSentReport ?? updated, updated);
 
       if (comparison.changed) {
-        this.lastSentReport = updated;
-        this.logger.info('Capability değişti (Laravel tarafında henüz bunu alacak bir uç nokta yok)', {
-          changedFields: comparison.changedFields,
-        });
+        await this.sendReport(updated, comparison.changedFields);
       }
     } catch (error) {
       this.logger.error('Capability kontrolü başarısız oldu', { error: (error as Error).message });
     } finally {
       this.scheduleNext();
+    }
+  }
+
+  private async sendReport(report: CapabilityReportContract, changedFields: string[]): Promise<void> {
+    try {
+      await this.laravelApiClient.sendCapabilityReport(report);
+      this.lastSentReport = report;
+      this.logger.info('Capability Report Laravel’e iletildi', { changedFields });
+    } catch (error) {
+      // lastSentReport intentionally NOT updated on failure — the next
+      // tick's compare() still sees this as an unsent change and retries.
+      this.logger.error('Capability Report gönderilemedi', { error: (error as Error).message });
     }
   }
 }

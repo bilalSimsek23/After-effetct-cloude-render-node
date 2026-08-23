@@ -76,7 +76,7 @@ export class ExecutionPipeline {
         });
       }
 
-      const renderResult = await this.buildRenderResult(context);
+      const renderResult = await this.buildRenderResult(context, Date.now() - startedAt);
       await context.progressService.stage(context.job.jobUuid, ExecutionStageName.COMPLETED);
 
       this.logger.info('Execution Pipeline tamamlandı', {
@@ -125,7 +125,7 @@ export class ExecutionPipeline {
     }
   }
 
-  private async buildRenderResult(context: ExecutionContext) {
+  private async buildRenderResult(context: ExecutionContext, executionDurationMs: number) {
     const outputFilePath = context.state.outputFilePath;
     const files = [];
 
@@ -165,6 +165,24 @@ export class ExecutionPipeline {
         logs: [],
         warnings:
           files.length === 0 ? ['Bu fazda gerçek render alınmadı, output dosyası yok.'] : [],
+        // Render Telemetry & Reliability Foundation — executionDurationSeconds
+        // was already computed by this method's caller (ExecutionResult.durationMs)
+        // but never carried into the Contract sent to Laravel; outputMetadata
+        // was already collected by CollectOutputStage and discarded here.
+        // Both are now forwarded (undefined, not 0/null, when metadata
+        // collection failed — an absent field, not a fabricated zero).
+        executionDurationSeconds: executionDurationMs / 1000,
+        ...(context.state.outputMetadata
+          ? {
+              outputMetadata: {
+                width: context.state.outputMetadata.width,
+                height: context.state.outputMetadata.height,
+                frameRate: context.state.outputMetadata.frameRate,
+                videoCodec: context.state.outputMetadata.videoCodec,
+                hasAudio: context.state.outputMetadata.hasAudio,
+              },
+            }
+          : {}),
       },
       version,
     );

@@ -18,6 +18,8 @@
  */
 export const LaravelApiEndpoints = {
   NODE_HEARTBEAT: '/api/render-nodes/heartbeat',
+  /** Render Telemetry & Reliability Foundation — was missing entirely; CapabilityLoop only logged a detected change until now. */
+  NODE_CAPABILITY_REPORT: '/api/render-nodes/capability-report',
   claimJob: (jobUuid: string): string => `/api/render-nodes/render-jobs/${jobUuid}/claim`,
   declineJob: (jobUuid: string): string => `/api/render-nodes/render-jobs/${jobUuid}/decline`,
   jobPayload: (jobUuid: string): string => `/api/render-nodes/render-jobs/${jobUuid}/payload`,

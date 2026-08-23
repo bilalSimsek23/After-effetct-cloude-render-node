@@ -23,6 +23,7 @@ import type { AssetContract } from '../contracts/asset.contract.js';
 import type { JobHeartbeatContract } from '../contracts/job-heartbeat.contract.js';
 import type { RenderProgressContract } from '../contracts/render-progress.contract.js';
 import type { RenderResultContract } from '../contracts/render-result.contract.js';
+import type { CapabilityReportContract } from '../contracts/capability-report.contract.js';
 import type { RenderNodeJobPayload } from '../types/render-node-job-payload.types.js';
 import type { IRetryPolicyService } from '../services/retry-policy.service.js';
 import { RetryOperation } from '../services/retry-policy.service.js';
@@ -39,6 +40,8 @@ const UNKNOWN_NODE_UUID = 'unknown';
  */
 export interface ILaravelApiClient extends IApiClient {
   sendJobHeartbeat(heartbeat: JobHeartbeatContract): Promise<void>;
+  /** Render Telemetry & Reliability Foundation — sent on first boot and whenever CapabilityRegistry.compare() detects a real change, never every heartbeat tick. */
+  sendCapabilityReport(report: CapabilityReportContract): Promise<void>;
   /** Claims a *specific* job Laravel already pushed a notification for. */
   claimRenderJob(jobUuid: string, claimToken: string): Promise<RenderNodeJobPayload>;
   /**
@@ -135,6 +138,10 @@ export class LaravelApiClient implements ILaravelApiClient {
 
   async sendJobHeartbeat(heartbeat: JobHeartbeatContract): Promise<void> {
     await this.request('POST', LaravelApiEndpoints.NODE_HEARTBEAT, heartbeat);
+  }
+
+  async sendCapabilityReport(report: CapabilityReportContract): Promise<void> {
+    await this.request('POST', LaravelApiEndpoints.NODE_CAPABILITY_REPORT, report);
   }
 
   async claimRenderJob(jobUuid: string, claimToken: string): Promise<RenderNodeJobPayload> {

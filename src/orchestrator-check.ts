@@ -333,6 +333,11 @@ async function run(): Promise<void> {
       return;
     }
 
+    if (path === '/api/render-nodes/capability-report' && method === 'POST') {
+      sendJson(res, 200, { success: true });
+      return;
+    }
+
     if (path === `/api/render-nodes/render-jobs/${jobUuid}/project-asset` && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/zip' });
       res.end(await readFile(templatePackagePath));
@@ -559,7 +564,7 @@ async function run(): Promise<void> {
     config,
     logger,
   );
-  const capabilityLoop = new CapabilityLoop(capabilityRegistry, logger);
+  const capabilityLoop = new CapabilityLoop(capabilityRegistry, laravelApiClient, logger);
   const nodeRegistrationService = new NodeRegistrationService(
     adobeRuntimeService,
     capabilityRegistry,

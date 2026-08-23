@@ -266,6 +266,7 @@ async function run(): Promise<void> {
     getDependencyPackage: notUsedHere,
     getTemplateAsset: notUsedHere,
     sendJobHeartbeat: notUsedHere,
+    sendCapabilityReport: notUsedHere,
     claimRenderJob: notUsedHere,
     declineRenderJob: notUsedHere,
     sendJobProgress: notUsedHere,

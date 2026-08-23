@@ -259,7 +259,7 @@ async function bootstrap(): Promise<void> {
     logger,
   );
 
-  const capabilityLoop = new CapabilityLoop(capabilityRegistry, logger);
+  const capabilityLoop = new CapabilityLoop(capabilityRegistry, laravelApiClient, logger);
 
   const selfUpdateLoop = new SelfUpdateLoop(
     jobProcessor,
