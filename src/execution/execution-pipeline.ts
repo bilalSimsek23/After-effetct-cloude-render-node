@@ -22,6 +22,7 @@ import { RenderJobRenderType } from '../contracts/render-job.contract.js';
 import { RenderNodeError } from '../errors/render-node-error.js';
 import { hashFileSha256 } from '../utils/hash-file.js';
 import type { Logger } from '../types/log.types.js';
+import { AsyncMutex } from '../adobe/runtime/async-mutex.js';
 
 /**
  * The single orchestrator of the whole render execution flow — the exact,
@@ -35,6 +36,15 @@ import type { Logger } from '../types/log.types.js';
  * JobManager integration, out of scope here — same precedent as Phase 3/4).
  */
 export class ExecutionPipeline {
+  // Community Render Asset Protection & Project Lifecycle Security phase —
+  // serializes the AE-touching portion of run() across concurrently
+  // processed jobs (see AsyncMutex's own docblock for why this is
+  // necessary given the node's single shared AE instance). A private
+  // instance field, not a constructor parameter, so every existing
+  // `new ExecutionPipeline(...)` call site (main.ts + the check-scripts)
+  // keeps working unchanged.
+  private readonly aeMutex = new AsyncMutex();
+
   constructor(
     private readonly loadProjectStage: LoadProjectStage,
     private readonly applyVariablesStage: ApplyVariablesStage,
@@ -64,17 +74,35 @@ export class ExecutionPipeline {
     let context = initialContext;
 
     try {
-      for (const stage of stages) {
-        const stageStartedAt = Date.now();
-        this.logger.debug(`Stage çalıştırılıyor: ${stage.name}`, { jobUuid: context.job.jobUuid });
-        context = await stage.execute(context);
-        this.logger.info(`Stage tamamlandı: ${stage.name}`, {
-          jobUuid: context.job.jobUuid,
-          stage: stage.name,
-          durationMs: Date.now() - stageStartedAt,
-          result: 'OK',
-        });
-      }
+      // Community Render Asset Protection & Project Lifecycle Security
+      // phase — the entire AE-touching window (open → apply variables →
+      // save → render → wait) runs inside both a mutex (serializes against
+      // any concurrently-processing sibling job — see AsyncMutex) and a
+      // try/finally that GUARANTEES the project gets closed without saving
+      // regardless of which stage throws, or whether none do. Before this
+      // phase, a thrown stage error skipped every later stage (including
+      // CleanupStage, the pipeline's last stage) entirely, leaving the
+      // project open in AE indefinitely on any failure/timeout — this
+      // closes that gap on every exit path, not just the success path.
+      await this.aeMutex.runExclusive(async () => {
+        try {
+          for (const stage of stages) {
+            const stageStartedAt = Date.now();
+            this.logger.debug(`Stage çalıştırılıyor: ${stage.name}`, {
+              jobUuid: context.job.jobUuid,
+            });
+            context = await stage.execute(context);
+            this.logger.info(`Stage tamamlandı: ${stage.name}`, {
+              jobUuid: context.job.jobUuid,
+              stage: stage.name,
+              durationMs: Date.now() - stageStartedAt,
+              result: 'OK',
+            });
+          }
+        } finally {
+          await this.closeProjectWithoutSaving(context);
+        }
+      });
 
       const renderResult = await this.buildRenderResult(context, Date.now() - startedAt);
       await context.progressService.stage(context.job.jobUuid, ExecutionStageName.COMPLETED);
@@ -122,6 +150,32 @@ export class ExecutionPipeline {
         renderResult: null,
         errors: [message],
       };
+    }
+  }
+
+  /**
+   * Closes the AE project without saving, on every exit path (success,
+   * any stage failure, timeout). Never throws — a close failure must be
+   * observable (logged with a distinct event/severity) but must never
+   * override the render's own actual success/failure result, nor prevent
+   * the mutex above from releasing (a stuck lock would block every future
+   * job on this node forever). closeProject()'s own JSX
+   * (`if (app.project) ...`) already no-ops safely if LoadProjectStage
+   * itself never got far enough to open anything.
+   */
+  private async closeProjectWithoutSaving(context: ExecutionContext): Promise<void> {
+    try {
+      await context.afterEffectsEngine.closeProject();
+      this.logger.info('AE projesi kaydedilmeden kapatıldı', {
+        jobUuid: context.job.jobUuid,
+        event: 'render_project_closed_without_save',
+      });
+    } catch (error) {
+      this.logger.error('AE projesi kapatılamadı', {
+        jobUuid: context.job.jobUuid,
+        event: 'render_project_close_failed',
+        error: (error as Error).message,
+      });
     }
   }
 

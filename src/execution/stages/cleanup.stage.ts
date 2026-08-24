@@ -4,10 +4,16 @@ import { ExecutionStageName } from '../../services/progress.service.js';
 
 /**
  * Ends the job's AdobeSession (real, safe, idempotent — see
- * AdobeSession.dispose()). Deleting the Job Workspace / temporary files is
- * intentionally NOT done here yet (see spec: "gerçek silme işlemi
- * yapılmayacaktır") — that lands once a real render has actually produced
- * something worth preserving/inspecting first.
+ * AdobeSession.dispose()). This stage itself still only disposes the
+ * session object — it does NOT close the AE project (ExecutionPipeline.run()
+ * now guarantees that itself, in its own finally, on every exit path
+ * including ones where this stage never runs at all — see
+ * closeProjectWithoutSaving()) and does NOT delete the job's workspace
+ * directory (Community Render Asset Protection & Project Lifecycle
+ * Security phase — JobProcessor.processJob() now deletes it in its own
+ * outer finally, once the whole job — success or failure — is fully
+ * resolved, which is a broader guarantee than this stage alone could ever
+ * offer since it only ever runs on the success path).
  */
 export class CleanupStage implements IExecutionStage {
   readonly name = 'CleanupStage';
@@ -17,7 +23,7 @@ export class CleanupStage implements IExecutionStage {
 
     await context.adobeSession.dispose();
 
-    context.logger.info('Cleanup tamamlandı (workspace/temp dosyaları henüz silinmiyor)', {
+    context.logger.info('AdobeSession sonlandırıldı (proje kapatma ve workspace silme ayrı garanti edilir)', {
       jobUuid: context.job.jobUuid,
     });
 

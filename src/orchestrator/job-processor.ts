@@ -69,6 +69,12 @@ async function buildEmptyDependencyPackage(destinationPath: string): Promise<voi
  */
 export class JobProcessor implements JobRuntimeStats {
   private activeJobCount = 0;
+  // Community Render Asset Protection & Project Lifecycle Security phase —
+  // activeJobCount alone (a raw counter) can't tell a stale-workspace
+  // sweep which specific job UUIDs are currently in flight. Tracked
+  // alongside it so cleanupExpiredWorkspaces() has a hard, UUID-precise
+  // exclusion set rather than relying on mtime timing alone.
+  private readonly activeJobUuids = new Set<string>();
 
   constructor(
     private readonly laravelApiClient: ILaravelApiClient,
@@ -88,6 +94,15 @@ export class JobProcessor implements JobRuntimeStats {
 
   getRunningJobCount(): number {
     return this.activeJobCount;
+  }
+
+  /**
+   * Community Render Asset Protection & Project Lifecycle Security phase —
+   * consulted by a stale-workspace sweep (see NodeRunner) so an in-flight
+   * job's workspace is never a deletion candidate, independent of mtime.
+   */
+  getActiveJobUuids(): ReadonlySet<string> {
+    return this.activeJobUuids;
   }
 
   /**
@@ -158,6 +173,7 @@ export class JobProcessor implements JobRuntimeStats {
   ): Promise<void> {
     const { jobUuid, templateUuid, renderType } = job;
     this.activeJobCount += 1;
+    this.activeJobUuids.add(jobUuid);
     this.logger.info('Yeni iş alındı', { jobUuid, templateUuid });
 
     try {
@@ -246,6 +262,24 @@ export class JobProcessor implements JobRuntimeStats {
       });
       await this.resultForwarder.sendFailed(jobUuid, [message]).catch(() => {});
     } finally {
+      // Community Render Asset Protection & Project Lifecycle Security
+      // phase — runs regardless of success/failure/exception, exactly like
+      // activeJobCount's own decrement right below it. A cleanup failure
+      // is caught and logged here (never rethrown) so it can never turn an
+      // already-reported job result into a different one, nor prevent
+      // activeJobUuids from being released (which would wrongly protect a
+      // finished job's stale workspace from ever being swept later).
+      try {
+        await this.workspaceService.deleteJobWorkspace(jobUuid);
+      } catch (error) {
+        this.logger.error('Job Workspace temizliği başarısız oldu', {
+          jobUuid,
+          event: 'render_workspace_cleanup_failed',
+          error: (error as Error).message,
+        });
+      }
+
+      this.activeJobUuids.delete(jobUuid);
       this.activeJobCount -= 1;
     }
   }

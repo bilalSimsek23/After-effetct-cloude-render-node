@@ -302,6 +302,8 @@ async function bootstrap(): Promise<void> {
     adobeRuntimeService,
     laravelApiClient,
     logger,
+    workspaceService,
+    jobProcessor,
   );
 
   registerShutdownHandlers(logger, nodeRunner);

@@ -138,7 +138,11 @@ export class AdobeWorkspaceService {
       await mkdir(directory, { recursive: true });
     }
 
-    this.logger.info('Job Workspace oluşturuldu', { jobUuid, root: paths.root });
+    this.logger.info('Job Workspace oluşturuldu', {
+      jobUuid,
+      root: paths.root,
+      event: 'render_workspace_created',
+    });
 
     return paths;
   }
@@ -154,20 +158,39 @@ export class AdobeWorkspaceService {
     }
   }
 
+  /**
+   * Community Render Asset Protection & Project Lifecycle Security phase —
+   * now actually called, from JobProcessor.processJob()'s own outer
+   * finally, once every job (success or failure) is fully resolved. Left
+   * to throw on a genuine failure (e.g. a locked/in-use file) — the
+   * caller is responsible for catching it, logging
+   * render_workspace_cleanup_failed, and never letting that failure alter
+   * the job's already-decided/reported result (see JobProcessor's own
+   * comment on this call site).
+   */
   async deleteJobWorkspace(jobUuid: string): Promise<void> {
     const paths = this.getJobWorkspacePaths(jobUuid);
     await rm(paths.root, { recursive: true, force: true });
-    this.logger.info('Job Workspace silindi', { jobUuid });
+    this.logger.info('Job Workspace silindi', {
+      jobUuid,
+      event: 'render_workspace_cleanup_completed',
+    });
   }
 
   /**
-   * Removes job workspaces whose folder hasn't been touched in
-   * `maxAgeMs`. Nothing calls this yet — it exists so a future scheduled
-   * cleanup task (or the Render phases, once jobs actually finish) has
-   * somewhere to call into.
+   * Removes job workspaces whose folder hasn't been touched in `maxAgeMs`
+   * — the recovery path for a workspace left behind by a node crash/restart
+   * (JobProcessor's own end-of-job deleteJobWorkspace() call above handles
+   * the normal case; this is only for what that call never got a chance to
+   * run for). `excludeJobUuids` is a hard safety guarantee, independent of
+   * mtime: a currently-in-flight job's workspace is never a candidate for
+   * deletion here even if some pathological clock/mtime state would
+   * otherwise make it look stale (see NodeRunner's own wiring, which
+   * always passes JobProcessor's live active-job UUID set).
    */
   async cleanupExpiredWorkspaces(
     maxAgeMs: number = DEFAULT_MAX_JOB_WORKSPACE_AGE_MS,
+    excludeJobUuids: ReadonlySet<string> = new Set(),
   ): Promise<string[]> {
     let entries;
     try {
@@ -181,6 +204,10 @@ export class AdobeWorkspaceService {
 
     for (const entry of entries) {
       if (!entry.isDirectory()) {
+        continue;
+      }
+
+      if (excludeJobUuids.has(entry.name)) {
         continue;
       }
 
@@ -200,6 +227,7 @@ export class AdobeWorkspaceService {
     if (deletedJobUuids.length > 0) {
       this.logger.info("Süresi dolmuş Job Workspace'ler temizlendi", {
         jobUuids: deletedJobUuids,
+        event: 'render_workspace_cleanup_completed',
       });
     }
 

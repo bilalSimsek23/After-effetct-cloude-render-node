@@ -7,8 +7,10 @@ import type { PushServer } from './push-server.js';
 import type { ITunnelService } from './cloudflare-tunnel.service.js';
 import type { IHealthService } from '../services/health.service.js';
 import type { AdobeRuntimeService } from '../adobe/runtime/adobe-runtime.service.js';
+import type { AdobeWorkspaceService } from '../adobe/runtime/adobe-workspace.service.js';
 import type { ILaravelApiClient } from '../api/laravel-api.client.js';
 import type { Logger } from '../types/log.types.js';
+import type { JobProcessor } from './job-processor.js';
 
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 60_000;
 
@@ -38,12 +40,35 @@ export class NodeRunner {
     private readonly adobeRuntimeService: AdobeRuntimeService,
     private readonly laravelApiClient: ILaravelApiClient,
     private readonly logger: Logger,
+    private readonly workspaceService: AdobeWorkspaceService,
+    private readonly jobProcessor: JobProcessor,
     private readonly healthCheckIntervalMs: number = DEFAULT_HEALTH_CHECK_INTERVAL_MS,
   ) {}
 
   async start(): Promise<void> {
     await this.nodeRegistrationService.register();
     this.logger.info('Node READY');
+
+    // Community Render Asset Protection & Project Lifecycle Security phase
+    // — the recovery path for workspaces a prior process instance never
+    // got to clean up itself (a crash, a forced kill, `pm2 restart`, etc.)
+    // - see AdobeWorkspaceService.cleanupExpiredWorkspaces()'s own
+    // docblock. getActiveJobUuids() is always empty this early (no job has
+    // been claimed yet at startup) but is still passed through for the
+    // same hard safety guarantee, in case this method is ever also called
+    // from a later point in the node's lifecycle. Never allowed to block
+    // or fail startup - logged and swallowed on error.
+    try {
+      await this.workspaceService.cleanupExpiredWorkspaces(
+        undefined,
+        this.jobProcessor.getActiveJobUuids(),
+      );
+    } catch (error) {
+      this.logger.error('Başlangıçta eski Job Workspace temizliği başarısız oldu', {
+        event: 'render_workspace_cleanup_failed',
+        error: (error as Error).message,
+      });
+    }
 
     this.heartbeatLoop.start();
     this.capabilityLoop.start();

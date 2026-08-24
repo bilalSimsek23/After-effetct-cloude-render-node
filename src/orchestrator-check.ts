@@ -602,6 +602,8 @@ async function run(): Promise<void> {
     adobeRuntimeService,
     laravelApiClient,
     logger,
+    workspaceService,
+    jobProcessor,
     3_600_000, // health check loop: effectively disabled for this short-lived test
   );
 

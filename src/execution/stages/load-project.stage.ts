@@ -41,7 +41,11 @@ export class LoadProjectStage implements IExecutionStage {
       context.afterEffectsEngine.openProject(projectFilePath),
     );
 
-    context.logger.info('Proje açıldı', { jobUuid: context.job.jobUuid, projectFilePath });
+    context.logger.info('Proje açıldı', {
+      jobUuid: context.job.jobUuid,
+      projectFilePath,
+      event: 'render_project_opened',
+    });
 
     return context;
   }
