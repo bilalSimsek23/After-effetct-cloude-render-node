@@ -50,12 +50,12 @@ Render node'lar NAT arkasında/ev-ofis ağlarında çalışabildiği için, Lara
 4. Kurulum ekranında gösterilen komuttaki token'ı (`eyJ...` ile başlayan uzun metin) kopyala — bu, `config.json`'daki `pushServer.tunnelToken` alanı.
 5. **Public Hostname** sekmesinde:
    - Subdomain: örn. `render-node-1`
-   - Domain: `motioncurate.com`
+   - Domain: **kendi Cloudflare hesabınıza ait bir alan adı** (bu listede yalnızca sizin hesabınıza eklenmiş domain'ler görünür — `motioncurate.com` bizim hesabımıza kayıtlı olduğu için sizin listenizde çıkmaz; sahibi olduğunuz herhangi bir domain'i önce Cloudflare hesabınızda **Websites** bölümünden ekleyip burada onu seçin)
    - Type: `HTTP`
    - URL: `localhost:4790` (veya `config.json`'da seçtiğin `pushServer.port`)
 6. Kaydet.
 
-Bu node'un `callback_url`'i artık `https://render-node-1.motioncurate.com/render-jobs/notify` olacak (yol kısmı sabit — `render-jobs/notify`).
+Bu node'un `callback_url`'i artık `https://render-node-1.<sizin-domaininiz>/render-jobs/notify` olacak (yol kısmı sabit — `render-jobs/notify`). Doğrulama (`CallbackUrlValidator`) yalnızca `https://`, public bir IP'ye çözülen bir host ve kimlik bilgisi içermeyen bir URL şartı arıyor — motioncurate.com'a özel bir kısıtlama yok, herhangi bir domain'iniz kabul edilir.
 
 ## 3. Node'u Laravel'e kaydet
 
