@@ -14,10 +14,16 @@ import { readFile } from 'node:fs/promises';
 export function withJsxErrorBoundary(jsxCode: string, errorFilePath: string): string {
   return (
     `try {\n${jsxCode}\n} catch (__bridgeError) {\n` +
+    // File#open()/#write() return a boolean instead of throwing on failure,
+    // so their result is checked here rather than assumed - this file is
+    // the only channel this bridge has for surfacing a script's real error
+    // back to Node, and a silent write failure here would otherwise look
+    // indistinguishable from "the script actually succeeded".
     `  var __bridgeErrorFile = new File(${JSON.stringify(errorFilePath)});\n` +
-    `  __bridgeErrorFile.open('w');\n` +
-    `  __bridgeErrorFile.write(__bridgeError && __bridgeError.message ? __bridgeError.message : String(__bridgeError));\n` +
-    `  __bridgeErrorFile.close();\n` +
+    `  if (__bridgeErrorFile.open('w')) {\n` +
+    `    __bridgeErrorFile.write(__bridgeError && __bridgeError.message ? __bridgeError.message : String(__bridgeError));\n` +
+    `    __bridgeErrorFile.close();\n` +
+    `  }\n` +
     `}`
   );
 }

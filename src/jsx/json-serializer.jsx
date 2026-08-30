@@ -67,7 +67,18 @@ function jsonEscapeString(str) {
 function writeJsonFile(path, data) {
   var f = new File(path);
   f.encoding = 'UTF-8';
-  f.open('w');
-  f.write(toJsonString(data));
+  // File#open()/#write() return a boolean instead of throwing on failure -
+  // silently ignoring that return value meant a write failure (e.g. the
+  // parent folder not existing, or a locked/inaccessible path) looked
+  // exactly like a successful run to the calling script, and only surfaced
+  // much later on the Node side as a confusing "report file not found"
+  // instead of the real underlying cause.
+  if (!f.open('w')) {
+    throw new Error('Could not open file for writing: ' + path);
+  }
+  if (!f.write(toJsonString(data))) {
+    f.close();
+    throw new Error('Could not write to file: ' + path);
+  }
   f.close();
 }
