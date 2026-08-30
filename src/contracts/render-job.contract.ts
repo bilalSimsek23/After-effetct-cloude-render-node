@@ -52,20 +52,20 @@ export class RenderJobValidator extends BaseContractValidator<RenderJobContract>
     const issues: string[] = [];
     for (const field of ['jobUuid', 'templateUuid', 'projectUuid', 'userUuid']) {
       if (typeof record[field] !== 'string' || record[field] === '') {
-        issues.push(`${field} boş olmayan string olmalı`);
+        issues.push(`${field} must be a non-empty string`);
       }
     }
     if (typeof record.variables !== 'object' || record.variables === null) {
-      issues.push('variables bir nesne olmalı');
+      issues.push('variables must be an object');
     }
     if (!Object.values(RenderJobPriority).includes(record.priority as RenderJobPriority)) {
       issues.push(
-        `priority geçerli bir RenderJobPriority olmalı, "${String(record.priority)}" geçersiz`,
+        `priority must be a valid RenderJobPriority; "${String(record.priority)}" is invalid`,
       );
     }
     if (!Object.values(RenderJobRenderType).includes(record.renderType as RenderJobRenderType)) {
       issues.push(
-        `renderType geçerli bir RenderJobRenderType olmalı, "${String(record.renderType)}" geçersiz`,
+        `renderType must be a valid RenderJobRenderType; "${String(record.renderType)}" is invalid`,
       );
     }
     return issues;

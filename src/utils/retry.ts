@@ -30,7 +30,7 @@ export async function retryWithBackoff<T>(fn: () => Promise<T>, options: RetryOp
       }
 
       options.logger.warn(
-        `${options.label} başarısız oldu, yeniden denenecek (${attempt}/${options.retries})`,
+        `${options.label} failed, retrying (${attempt}/${options.retries})`,
         { error: (error as Error).message },
       );
 

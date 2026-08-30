@@ -7,7 +7,7 @@ import { rm } from 'node:fs/promises';
 import type { IAdobeBridge } from '../adobe-bridge.js';
 import { JsxExecutionError } from '../adobe-bridge.js';
 import { withJsxErrorBoundary, readJsxErrorFile } from '../jsx-error-boundary.js';
-import { withTimeout } from '../../../utils/with-timeout.js';
+import { withTimeout, TimeoutError } from '../../../utils/with-timeout.js';
 import type { Logger } from '../../../types/log.types.js';
 import type { AdobeAppId } from '../../models/adobe-app-id.js';
 import { ADOBE_APP_DESCRIPTORS } from '../../models/adobe-app.model.js';
@@ -31,9 +31,33 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 15000;
  * through AfterFxCliRunner the way macOS routes everything through
  * AppleScriptRunner.
  */
+/**
+ * A fresh Windows AE install/user profile ships with "Allow Scripts To
+ * Write Files And Access Network" OFF by default (Edit > Preferences >
+ * Scripting & Expressions). With it off, a script run via `-r` that
+ * touches File/Folder (which is every script this bridge ever sends -
+ * every JSX call is wrapped in withJsxErrorBoundary, which writes a File
+ * on the error path alone) makes AE show its own blocking native alert -
+ * "Unable to execute script. The Scripting plugin is not installed." -
+ * misleading wording for what is actually this permission being off, not
+ * a missing plugin (confirmed against a real Windows 11 + AE 2024 machine,
+ * 2026-08-30). That dialog needs a human click, so any `-r` call made
+ * while it's showing simply times out - which is what actually happens
+ * the very first time this bridge runs against a never-before-scripted AE
+ * profile.
+ */
+const SCRIPTING_PERMISSION_PREF_SECTION = 'Main Pref Section';
+const SCRIPTING_PERMISSION_PREF_KEY = 'Pref_SCRIPTING_FILE_NETWORK_SECURITY';
+const SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS = 5000;
+const SCRIPTING_PERMISSION_HINT =
+  'After Effects\' "Allow Scripts to Write Files and Access Network" permission appears to be off. ' +
+  'Open After Effects, go to Edit > Preferences > Scripting & Expressions, check ' +
+  '"Allow Scripts to Write Files and Access Network", and try again.';
+
 export class WindowsAdobeBridge implements IAdobeBridge {
   private readonly exePathCache = new Map<AdobeAppId, string>();
   private readonly cliRunner: AfterFxCliRunner;
+  private scriptingPermissionChecked = false;
 
   constructor(
     private readonly processManager: WindowsProcessManager,
@@ -71,7 +95,7 @@ export class WindowsAdobeBridge implements IAdobeBridge {
       );
       return stdout.toLowerCase().includes(imageName.toLowerCase());
     } catch (error) {
-      this.logger.debug('isAppRunning kontrolü başarısız oldu', {
+      this.logger.debug('isAppRunning check failed', {
         appId,
         error: (error as Error).message,
       });
@@ -82,9 +106,44 @@ export class WindowsAdobeBridge implements IAdobeBridge {
   async launchApp(appId: AdobeAppId): Promise<void> {
     const exePath = await this.resolveExePath(appId);
     if (!exePath) {
-      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} kurulu değil, başlatılamıyor.`);
+      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} is not installed, cannot launch.`);
     }
     await this.processManager.launchApp(exePath);
+  }
+
+  /**
+   * Best-effort, once per process: tries to flip the scripting permission
+   * on programmatically so a freshly-provisioned Windows machine never
+   * needs a human to click through Preferences at all. app.preferences'
+   * own get/setPrefAsLong calls are NOT gated by this same permission (only
+   * File/Folder/Socket use is) - confirmed by Adobe's own scripting API
+   * docs, though this has not yet been verified end-to-end against a real
+   * machine where the permission started OFF. If AE is already showing its
+   * blocking alert from an earlier attempt, this call will itself time out
+   * - caught and logged, never thrown, since the real, user-actionable
+   * error is the one runJsxCode/runJsxScript below raise if the permission
+   * turns out to still be off.
+   */
+  private async ensureScriptingPermission(exePath: string): Promise<void> {
+    if (this.scriptingPermissionChecked) {
+      return;
+    }
+    this.scriptingPermissionChecked = true;
+
+    try {
+      await this.cliRunner.runCode(
+        exePath,
+        `app.preferences.setPrefAsLong(${JSON.stringify(SCRIPTING_PERMISSION_PREF_SECTION)}, ${JSON.stringify(SCRIPTING_PERMISSION_PREF_KEY)}, 1);\n` +
+          'app.preferences.saveToDisk();',
+        SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS,
+      );
+      this.logger.debug('Attempted to set scripting permission automatically');
+    } catch (error) {
+      this.logger.warn(
+        'Failed to set scripting permission automatically - After Effects may be waiting on a confirmation dialog',
+        { error: (error as Error).message },
+      );
+    }
   }
 
   /**
@@ -103,7 +162,7 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     try {
       await this.cliRunner.runCode(exePath, 'app.quit();', DEFAULT_COMMAND_TIMEOUT_MS);
     } catch (error) {
-      this.logger.debug('quitApp çalıştırma hatası', {
+      this.logger.debug('quitApp execution error', {
         appId,
         error: (error as Error).message,
       });
@@ -119,7 +178,7 @@ export class WindowsAdobeBridge implements IAdobeBridge {
    */
   async sendAppleScriptCommand(): Promise<string> {
     throw new Error(
-      'sendAppleScriptCommand macOS/AppleScript’e özgüdür, Windows’ta desteklenmiyor.',
+      'sendAppleScriptCommand is specific to macOS/AppleScript and is not supported on Windows.',
     );
   }
 
@@ -129,6 +188,7 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     timeoutMs: number = DEFAULT_COMMAND_TIMEOUT_MS,
   ): Promise<string> {
     const exePath = await this.requireExePath(appId);
+    await this.ensureScriptingPermission(exePath);
     const errorFilePath = join(tmpdir(), `render-node-jsx-error-${randomUUID()}.txt`);
 
     try {
@@ -141,6 +201,8 @@ export class WindowsAdobeBridge implements IAdobeBridge {
       }
 
       return stdout;
+    } catch (error) {
+      throw this.explainIfTimeout(error);
     } finally {
       await rm(errorFilePath, { force: true }).catch(() => {});
     }
@@ -152,8 +214,26 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     timeoutMs: number = DEFAULT_COMMAND_TIMEOUT_MS,
   ): Promise<string> {
     const exePath = await this.requireExePath(appId);
-    const { stdout } = await this.cliRunner.runFile(exePath, scriptPath, timeoutMs);
-    return stdout;
+    await this.ensureScriptingPermission(exePath);
+    try {
+      const { stdout } = await this.cliRunner.runFile(exePath, scriptPath, timeoutMs);
+      return stdout;
+    } catch (error) {
+      throw this.explainIfTimeout(error);
+    }
+  }
+
+  /**
+   * Turns a bare TimeoutError (a `-r` process that never returned) into an
+   * actionable message - see the scripting-permission docblock above for
+   * why this specific timeout shape almost always means AE is sitting
+   * behind its own blocking alert, not that the machine is merely slow.
+   */
+  private explainIfTimeout(error: unknown): Error {
+    if (error instanceof TimeoutError) {
+      return new Error(`${SCRIPTING_PERMISSION_HINT} (${error.message})`);
+    }
+    return error instanceof Error ? error : new Error(String(error));
   }
 
   private imageNameFor(exePath: string): string {
@@ -163,7 +243,7 @@ export class WindowsAdobeBridge implements IAdobeBridge {
   private async requireExePath(appId: AdobeAppId): Promise<string> {
     const exePath = await this.resolveExePath(appId);
     if (!exePath) {
-      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} kurulu değil.`);
+      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} is not installed.`);
     }
     return exePath;
   }

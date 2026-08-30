@@ -151,7 +151,7 @@ describe('ExecutionPipeline — guaranteed AE project close (Community Render As
     expect(result.status).toBe(ExecutionResultStatus.COMPLETED);
     expect(closeProject).toHaveBeenCalledTimes(1);
     expect(pipelineLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('kapatılamadı'),
+      expect.stringContaining('Failed to close'),
       expect.objectContaining({ event: 'render_project_close_failed' }),
     );
   });

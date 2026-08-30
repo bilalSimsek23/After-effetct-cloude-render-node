@@ -22,7 +22,7 @@ export class LutInstallerService implements ILutInstallerService {
   async installLuts(extractedDir: string): Promise<LutInstallResult> {
     const result = await copyDirectoryContents(resolve(extractedDir, 'luts'), this.lutsDirectory);
 
-    this.logger.info('LUT dosyaları kuruldu', {
+    this.logger.info('LUT files installed', {
       lutsDirectory: this.lutsDirectory,
       installed: result.copied,
       skipped: result.skipped,

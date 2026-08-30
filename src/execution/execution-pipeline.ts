@@ -88,11 +88,11 @@ export class ExecutionPipeline {
         try {
           for (const stage of stages) {
             const stageStartedAt = Date.now();
-            this.logger.debug(`Stage çalıştırılıyor: ${stage.name}`, {
+            this.logger.debug(`Running stage: ${stage.name}`, {
               jobUuid: context.job.jobUuid,
             });
             context = await stage.execute(context);
-            this.logger.info(`Stage tamamlandı: ${stage.name}`, {
+            this.logger.info(`Stage completed: ${stage.name}`, {
               jobUuid: context.job.jobUuid,
               stage: stage.name,
               durationMs: Date.now() - stageStartedAt,
@@ -107,7 +107,7 @@ export class ExecutionPipeline {
       const renderResult = await this.buildRenderResult(context, Date.now() - startedAt);
       await context.progressService.stage(context.job.jobUuid, ExecutionStageName.COMPLETED);
 
-      this.logger.info('Execution Pipeline tamamlandı', {
+      this.logger.info('Execution Pipeline completed', {
         jobUuid: context.job.jobUuid,
         durationMs: Date.now() - startedAt,
       });
@@ -130,7 +130,7 @@ export class ExecutionPipeline {
         error instanceof RenderNodeError
           ? `[${error.code}] ${error.message}`
           : (error as Error).message;
-      this.logger.error('Execution Pipeline başarısız', {
+      this.logger.error('Execution Pipeline failed', {
         jobUuid: initialContext.job.jobUuid,
         stage: error instanceof ExecutionStageError ? error.stageName : null,
         durationMs: Date.now() - startedAt,
@@ -166,12 +166,12 @@ export class ExecutionPipeline {
   private async closeProjectWithoutSaving(context: ExecutionContext): Promise<void> {
     try {
       await context.afterEffectsEngine.closeProject();
-      this.logger.info('AE projesi kaydedilmeden kapatıldı', {
+      this.logger.info('AE project closed without saving', {
         jobUuid: context.job.jobUuid,
         event: 'render_project_closed_without_save',
       });
     } catch (error) {
-      this.logger.error('AE projesi kapatılamadı', {
+      this.logger.error('Failed to close AE project', {
         jobUuid: context.job.jobUuid,
         event: 'render_project_close_failed',
         error: (error as Error).message,
@@ -218,7 +218,7 @@ export class ExecutionPipeline {
         files,
         logs: [],
         warnings:
-          files.length === 0 ? ['Bu fazda gerçek render alınmadı, output dosyası yok.'] : [],
+          files.length === 0 ? ['No real render was produced in this phase, no output file.'] : [],
         // Render Telemetry & Reliability Foundation — executionDurationSeconds
         // was already computed by this method's caller (ExecutionResult.durationMs)
         // but never carried into the Contract sent to Laravel; outputMetadata

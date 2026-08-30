@@ -14,6 +14,6 @@ export class ScannerService implements IScannerService {
   constructor(private readonly logger: Logger) {}
 
   async scan(renderTemplateUuid: string): Promise<void> {
-    this.logger.debug('ScannerService.scan() henüz implemente edilmedi', { renderTemplateUuid });
+    this.logger.debug('ScannerService.scan() not implemented yet', { renderTemplateUuid });
   }
 }

@@ -28,7 +28,7 @@ export class DependencyManifestReader implements IDependencyManifestReader {
       raw = await readFile(manifestPath, 'utf-8');
     } catch (error) {
       throw new ManifestValidationError(
-        `dependencies.json bulunamadı: ${manifestPath} (${(error as Error).message})`,
+        `dependencies.json not found: ${manifestPath} (${(error as Error).message})`,
       );
     }
 
@@ -37,7 +37,7 @@ export class DependencyManifestReader implements IDependencyManifestReader {
       parsed = JSON.parse(raw);
     } catch (error) {
       throw new ManifestValidationError(
-        `dependencies.json geçerli bir JSON değil: ${(error as Error).message}`,
+        `dependencies.json is not valid JSON: ${(error as Error).message}`,
       );
     }
 
@@ -48,13 +48,13 @@ export class DependencyManifestReader implements IDependencyManifestReader {
 
   private assertValid(value: unknown): asserts value is DependencyManifest {
     if (typeof value !== 'object' || value === null) {
-      throw new ManifestValidationError('dependencies.json kökü bir JSON nesnesi olmalı.');
+      throw new ManifestValidationError('dependencies.json root must be a JSON object.');
     }
 
     const manifest = value as Record<string, unknown>;
 
     if (typeof manifest.version !== 'number') {
-      throw new ManifestValidationError('dependencies.json "version" alanı sayısal olmalı.');
+      throw new ManifestValidationError('dependencies.json "version" field must be numeric.');
     }
 
     for (const section of [
@@ -68,7 +68,7 @@ export class DependencyManifestReader implements IDependencyManifestReader {
       'cloudFontLinks',
     ]) {
       if (section in manifest && !Array.isArray(manifest[section])) {
-        throw new ManifestValidationError(`dependencies.json "${section}" alanı bir dizi olmalı.`);
+        throw new ManifestValidationError(`dependencies.json "${section}" field must be an array.`);
       }
     }
   }

@@ -80,14 +80,14 @@ export class ProjectValidator implements IProjectValidator {
       ) as ManifestContract;
     } catch (error) {
       throw new ProjectValidationError(
-        `Template snapshot'ından manifest oluşturulamadı: ${(error as Error).message}`,
+        `Failed to build manifest from template snapshot: ${(error as Error).message}`,
       );
     }
 
     const expectedVersion = this.contractRegistry.getCurrentVersion(ContractName.MANIFEST);
     if (!isContractVersionCompatible(manifest.version, expectedVersion)) {
       throw new ProjectValidationError(
-        `Manifest Contract versiyonu uyumsuz: proje "${manifest.version}" ile geldi, bu node "${expectedVersion}" bekliyor.`,
+        `Manifest Contract version mismatch: project came with "${manifest.version}", this node expects "${expectedVersion}".`,
       );
     }
 
@@ -95,7 +95,7 @@ export class ProjectValidator implements IProjectValidator {
     const manifestFilePath = resolve(jobWorkspace.manifest, MANIFEST_FILE_NAME);
     await writeFile(manifestFilePath, JSON.stringify(manifest, null, 2), 'utf-8');
 
-    this.logger.info('Proje manifestosu doğrulandı', {
+    this.logger.info('Project manifest validated', {
       manifestFilePath,
       scannerVersion: manifest.scannerVersion,
       variableCount: manifest.variables.length,

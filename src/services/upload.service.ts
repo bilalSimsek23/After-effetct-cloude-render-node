@@ -50,7 +50,7 @@ export class UploadService implements IUploadService {
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
-      throw new UploadError(`Yükleme başarısız: ${url} → HTTP ${response.status} ${errorBody}`, {
+      throw new UploadError(`Upload failed: ${url} → HTTP ${response.status} ${errorBody}`, {
         url,
         status: response.status,
         localFilePath,
@@ -61,14 +61,14 @@ export class UploadService implements IUploadService {
     const body = (await response.json().catch(() => null)) as { url?: string } | null;
 
     if (!body?.url) {
-      throw new UploadError(`Yükleme yanıtında 'url' alanı yok: ${url}`, {
+      throw new UploadError(`Upload response missing 'url' field: ${url}`, {
         url,
         localFilePath,
         jobUuid,
       });
     }
 
-    this.logger.info('Çıktı yüklendi', { localFilePath, jobUuid, uploadedUrl: body.url });
+    this.logger.info('Output uploaded', { localFilePath, jobUuid, uploadedUrl: body.url });
 
     return body.url;
   }

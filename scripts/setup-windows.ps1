@@ -7,12 +7,12 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 
-Write-Host "== MotionCurate Render Node Kurulumu (Windows) ==" -ForegroundColor Cyan
+Write-Host "== MotionCurate Render Node Setup (Windows) ==" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "winget bulunamadı." -ForegroundColor Red
-    Write-Host "Microsoft Store'dan 'App Installer'i güncelleyip bu script'i tekrar çalıştırın."
+    Write-Host "winget was not found." -ForegroundColor Red
+    Write-Host "Update 'App Installer' from the Microsoft Store, then run this script again."
     exit 1
 }
 
@@ -23,37 +23,37 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
 }
 
 if (-not $nodeOk) {
-    Write-Host "Node.js 22+ kuruluyor (winget install OpenJS.NodeJS.LTS)..."
+    Write-Host "Installing Node.js 22+ (winget install OpenJS.NodeJS.LTS)..."
     winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
     Write-Host ""
-    Write-Host "Node.js kuruldu. PATH güncellemesi için bu terminali kapatip yeniden acin," -ForegroundColor Yellow
-    Write-Host "sonra bu script'i tekrar calistirin." -ForegroundColor Yellow
+    Write-Host "Node.js installed. Close this terminal and open a new one so PATH updates," -ForegroundColor Yellow
+    Write-Host "then run this script again." -ForegroundColor Yellow
     exit 0
 } else {
-    Write-Host "Node.js zaten kurulu: $(node -v)"
+    Write-Host "Node.js is already installed: $(node -v)"
 }
 
 if (-not (Get-Command cloudflared -ErrorAction SilentlyContinue)) {
-    Write-Host "cloudflared kuruluyor (winget install Cloudflare.cloudflared)..."
+    Write-Host "Installing cloudflared (winget install Cloudflare.cloudflared)..."
     winget install --id Cloudflare.cloudflared --silent --accept-package-agreements --accept-source-agreements
 } else {
-    Write-Host "cloudflared zaten kurulu."
+    Write-Host "cloudflared is already installed."
 }
 
 Write-Host ""
-Write-Host "npm bagimliliklari kuruluyor..."
+Write-Host "Installing npm dependencies..."
 Set-Location $ProjectDir
 npm install
 
 Write-Host ""
-Write-Host "Proje derleniyor (npm run build)..."
+Write-Host "Building the project (npm run build)..."
 npm run build
 
 Write-Host ""
 node "$ScriptDir\configure.mjs"
 
 Write-Host ""
-Write-Host "== Siradaki adimlar (detaylar icin SETUP.md) ==" -ForegroundColor Cyan
-Write-Host "1. Cloudflare Tunnel olusturmadiysan: SETUP.md adim 2."
-Write-Host "2. Node'u Laravel'e kaydetmediysen: SETUP.md adim 3."
-Write-Host "3. Her ikisi de tamamsa: npm start"
+Write-Host "== Next steps (see SETUP.md for details) ==" -ForegroundColor Cyan
+Write-Host "1. If you haven't created a Cloudflare Tunnel yet: SETUP.md step 2."
+Write-Host "2. If you haven't registered the node with Laravel yet: SETUP.md step 3."
+Write-Host "3. Once both are done: npm start"

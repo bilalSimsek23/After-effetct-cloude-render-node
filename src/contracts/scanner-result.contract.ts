@@ -35,11 +35,11 @@ export class ScannerResultValidator extends BaseContractValidator<ScannerResultC
 
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
-    if (typeof record.success !== 'boolean') issues.push('success boolean olmalı');
-    if (!Array.isArray(record.errors)) issues.push('errors dizi olmalı');
-    if (typeof record.durationMs !== 'number') issues.push('durationMs sayısal olmalı');
+    if (typeof record.success !== 'boolean') issues.push('success must be a boolean');
+    if (!Array.isArray(record.errors)) issues.push('errors must be an array');
+    if (typeof record.durationMs !== 'number') issues.push('durationMs must be a number');
     if (record.manifest !== null && typeof record.manifest !== 'object') {
-      issues.push('manifest bir nesne ya da null olmalı');
+      issues.push('manifest must be an object or null');
     }
     return issues;
   }

@@ -14,6 +14,6 @@ export class RenderService implements IRenderService {
   constructor(private readonly logger: Logger) {}
 
   async render(job: RenderJob): Promise<void> {
-    this.logger.debug('RenderService.render() henüz implemente edilmedi', { jobUuid: job.uuid });
+    this.logger.debug('RenderService.render() not implemented yet', { jobUuid: job.uuid });
   }
 }

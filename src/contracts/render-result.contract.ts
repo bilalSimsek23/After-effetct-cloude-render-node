@@ -61,11 +61,11 @@ export class RenderResultValidator extends BaseContractValidator<RenderResultCon
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (typeof record.durationSeconds !== 'number' || record.durationSeconds < 0) {
-      issues.push('durationSeconds negatif olmayan sayı olmalı');
+      issues.push('durationSeconds must be a non-negative number');
     }
-    if (!Array.isArray(record.files)) issues.push('files dizi olmalı');
-    if (!Array.isArray(record.logs)) issues.push('logs dizi olmalı');
-    if (!Array.isArray(record.warnings)) issues.push('warnings dizi olmalı');
+    if (!Array.isArray(record.files)) issues.push('files must be an array');
+    if (!Array.isArray(record.logs)) issues.push('logs must be an array');
+    if (!Array.isArray(record.warnings)) issues.push('warnings must be an array');
     return issues;
   }
 }

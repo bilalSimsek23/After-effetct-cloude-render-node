@@ -22,7 +22,7 @@ export const ADOBE_OUTPUT_MODULE_TEMPLATE_KEY = 'adobeOutputModuleTemplate';
 /**
  * Text burned into the render as a real AE text layer when the profile's
  * `watermarkEnabled` is true (see queue-media-encoder.jsx) — e.g. the free
- * proxy tier's "MOTIONCURATE ÖNİZLEME" watermark. Absent/non-string means
+ * proxy tier's "MOTIONCURATE PREVIEW" watermark. Absent/non-string means
  * no watermark layer is added even if `watermarkEnabled` is true.
  */
 export const WATERMARK_TEXT_KEY = 'watermarkText';

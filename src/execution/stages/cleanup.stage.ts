@@ -23,7 +23,7 @@ export class CleanupStage implements IExecutionStage {
 
     await context.adobeSession.dispose();
 
-    context.logger.info('AdobeSession sonlandırıldı (proje kapatma ve workspace silme ayrı garanti edilir)', {
+    context.logger.info('AdobeSession terminated (project close and workspace deletion are guaranteed separately)', {
       jobUuid: context.job.jobUuid,
     });
 

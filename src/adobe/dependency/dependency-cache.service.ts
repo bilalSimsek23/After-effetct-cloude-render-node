@@ -32,7 +32,7 @@ export class DependencyCacheService implements IDependencyCacheService {
     await mkdir(dirname(this.cacheFilePath), { recursive: true });
     await writeFile(this.cacheFilePath, JSON.stringify(cache, null, 2), 'utf-8');
 
-    this.logger.debug('Dependency cache güncellendi', { renderTemplateUuid, packageVersion });
+    this.logger.debug('Dependency cache updated', { renderTemplateUuid, packageVersion });
   }
 
   private async readCache(): Promise<Record<string, number>> {

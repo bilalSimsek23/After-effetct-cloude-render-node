@@ -52,7 +52,7 @@ export class HeartbeatLoop {
     try {
       const nodeUuid = this.nodeIdentity.getNodeUuid();
       if (!nodeUuid) {
-        this.logger.warn('node_uuid henüz yok, heartbeat bu turda atlandı');
+        this.logger.warn('node_uuid not available yet, heartbeat skipped this round');
         return;
       }
 
@@ -79,12 +79,12 @@ export class HeartbeatLoop {
 
       await this.laravelApiClient.sendJobHeartbeat(heartbeat);
 
-      this.logger.info('Heartbeat gönderildi (JobHeartbeatContract)', {
+      this.logger.info('Heartbeat sent (JobHeartbeatContract)', {
         runningJobs: heartbeat.runningJobs,
         memoryUsagePercent: heartbeat.memory.usagePercent,
       });
     } catch (error) {
-      this.logger.error('Heartbeat gönderilemedi', { error: (error as Error).message });
+      this.logger.error('Failed to send heartbeat', { error: (error as Error).message });
     } finally {
       this.scheduleNext();
     }

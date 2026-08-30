@@ -1,6 +1,6 @@
 export class TimeoutError extends Error {
   constructor(label: string, timeoutMs: number) {
-    super(`"${label}" işlemi ${timeoutMs}ms içinde tamamlanmadı.`);
+    super(`"${label}" operation did not complete within ${timeoutMs}ms.`);
     this.name = 'TimeoutError';
   }
 }

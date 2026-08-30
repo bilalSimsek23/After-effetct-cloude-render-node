@@ -44,12 +44,12 @@ async function ask(rl, question, defaultValue) {
 async function main() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log('== MotionCurate Render Node - config.json Kurulumu ==\n');
+  console.log('== MotionCurate Render Node - config.json Setup ==\n');
 
   const aeFound = detectAfterEffects();
   if (aeFound === false) {
     console.warn(
-      '[UYARI] Bu makinede Adobe After Effects bulunamadı - render node gerçek render işi yapamaz, sadece bağlanabilir/test edilebilir.\n',
+      '[WARNING] Adobe After Effects was not found on this machine - the render node can connect/be tested, but cannot run real render jobs.\n',
     );
   }
 
@@ -80,14 +80,14 @@ async function main() {
     // blank and enter the UUID/secret manually below, same as before).
     const registrationToken = await ask(
       rl,
-      'Registration Token (author panelindeki "Render Node Ekle"den alınır - admin size UUID/Secret verdiyse boş bırakın)',
+      'Registration Token (from "Add Render Node" in the author panel - leave blank if an admin already gave you a UUID/Secret)',
       '',
     );
 
     if (registrationToken) {
-      const nodeName = await ask(rl, 'Node adı', existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`);
+      const nodeName = await ask(rl, 'Node name', existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`);
 
-      console.log('\nKayıt olunuyor...');
+      console.log('\nRegistering...');
       try {
         const response = await fetch(`${server}/api/render-nodes/register`, {
           method: 'POST',
@@ -103,12 +103,12 @@ async function main() {
         nodeUuid = body.nodeUuid;
         apiSecret = body.apiSecret;
         registeredNodeName = nodeName;
-        console.log(`Kayıt başarılı - node UUID: ${nodeUuid}\n`);
+        console.log(`Registration successful - node UUID: ${nodeUuid}\n`);
         // apiSecret is intentionally never logged here - it goes straight
         // into config.json below.
       } catch (error) {
-        console.error(`\n[HATA] Kayıt başarısız: ${error.message}`);
-        console.error('UUID/Secret alanlarını admin tarafından verilen değerlerle elle de girebilirsiniz.\n');
+        console.error(`\n[ERROR] Registration failed: ${error.message}`);
+        console.error('You can also enter the UUID/Secret fields manually with the values an admin gave you.\n');
       }
     }
   }
@@ -116,23 +116,23 @@ async function main() {
   if (!nodeUuid) {
     nodeUuid = await ask(
       rl,
-      "Node UUID (php artisan cloud-render:register-render-node çıktısından)",
+      'Node UUID (from the output of php artisan cloud-render:register-render-node)',
       existing.nodeUuid && existing.nodeUuid !== 'CHANGE_ME' ? existing.nodeUuid : '',
     );
   }
   if (!apiSecret) {
     apiSecret = await ask(
       rl,
-      'API Secret (aynı komutun çıktısından)',
+      'API Secret (from the same command\'s output)',
       existing.apiSecret && existing.apiSecret !== 'CHANGE_ME' ? existing.apiSecret : '',
     );
   }
   const nodeName = await ask(
     rl,
-    'Node adı',
+    'Node name',
     registeredNodeName || existing.nodeName || `${process.platform === 'win32' ? 'Windows' : 'Mac'} Render Node`,
   );
-  const pushPort = await ask(rl, 'Push server portu (Cloudflare Tunnel bunu hedefleyecek)', String(existing.pushServer?.port || 4790));
+  const pushPort = await ask(rl, 'Push server port (your Cloudflare Tunnel will target this)', String(existing.pushServer?.port || 4790));
   const tunnelToken = await ask(
     rl,
     'Cloudflare Tunnel token (dashboard > Networks > Tunnels)',
@@ -140,13 +140,13 @@ async function main() {
       ? existing.pushServer.tunnelToken
       : '',
   );
-  const maxJobs = await ask(rl, 'Maksimum eşzamanlı iş sayısı', String(existing.maxConcurrentJobs || 1));
+  const maxJobs = await ask(rl, 'Maximum concurrent jobs', String(existing.maxConcurrentJobs || 1));
   const autoUpdateAnswer = await ask(
     rl,
-    "Otomatik güncelleme aktif olsun mu? (GitHub'daki main branch'i periyodik kontrol edip, node boştayken kendini günceller) [evet/hayır]",
-    existing.autoUpdate?.enabled === false ? 'hayır' : 'evet',
+    'Enable automatic updates? (periodically checks the main branch on GitHub and updates itself when the node is idle) [yes/no]',
+    existing.autoUpdate?.enabled === false ? 'no' : 'yes',
   );
-  const autoUpdateEnabled = !/^h/i.test(autoUpdateAnswer.trim());
+  const autoUpdateEnabled = !/^n/i.test(autoUpdateAnswer.trim());
 
   rl.close();
 
@@ -174,7 +174,7 @@ async function main() {
 
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
 
-  console.log(`\nconfig.json yazıldı: ${configPath}`);
+  console.log(`\nconfig.json written: ${configPath}`);
 
   const missing = [];
   if (!nodeUuid) missing.push('nodeUuid');
@@ -182,14 +182,14 @@ async function main() {
   if (!tunnelToken) missing.push('tunnelToken');
   if (missing.length > 0) {
     console.warn(
-      `\n[UYARI] Şu alanlar boş bırakıldı: ${missing.join(', ')}. Node bunlar doldurulmadan başlamayacaktır - config.json'ı elle düzenleyip tekrar deneyebilir ya da bu script'i tekrar çalıştırabilirsin.`,
+      `\n[WARNING] The following fields were left blank: ${missing.join(', ')}. The node will not start until they are filled in - you can edit config.json by hand and try again, or re-run this script.`,
     );
   } else {
-    console.log("\nHer şey hazır görünüyor. 'npm start' ile node'u başlatabilirsin.");
+    console.log("\nEverything looks ready. You can start the node with 'npm start'.");
   }
 }
 
 main().catch((error) => {
-  console.error('[HATA]', error.message);
+  console.error('[ERROR]', error.message);
   process.exitCode = 1;
 });

@@ -124,7 +124,7 @@ export class ProgressService implements IProgressService {
       message: progress.currentStep,
     });
 
-    this.logger.info('İlerleme raporlandı', {
+    this.logger.info('Progress reported', {
       jobUuid,
       stageName,
       status: progress.status,

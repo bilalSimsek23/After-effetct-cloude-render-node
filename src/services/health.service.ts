@@ -58,7 +58,7 @@ export class HealthService implements IHealthService {
     const healthy = Object.values(checks).every(Boolean);
 
     if (!healthy) {
-      this.logger.error('Health check: bir veya daha fazla kontrol başarısız', { checks });
+      this.logger.error('Health check: one or more checks failed', { checks });
     }
 
     return { healthy, checks };
@@ -68,7 +68,7 @@ export class HealthService implements IHealthService {
     try {
       return await fn();
     } catch (error) {
-      this.logger.debug('Health check kontrolü başarısız oldu', {
+      this.logger.debug('Health check failed', {
         error: (error as Error).message,
       });
       return false;

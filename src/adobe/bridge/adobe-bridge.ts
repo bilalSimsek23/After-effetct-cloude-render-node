@@ -105,7 +105,7 @@ export class AdobeBridge implements IAdobeBridge {
       );
       return stdout === 'true';
     } catch (error) {
-      this.logger.debug('isAppRunning kontrolü başarısız oldu', {
+      this.logger.debug('isAppRunning check failed', {
         appId,
         error: (error as Error).message,
       });
@@ -116,7 +116,7 @@ export class AdobeBridge implements IAdobeBridge {
   async launchApp(appId: AdobeAppId): Promise<void> {
     const bundlePath = await this.resolveBundlePath(appId);
     if (!bundlePath) {
-      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} kurulu değil, başlatılamıyor.`);
+      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} is not installed, cannot launch.`);
     }
     await this.processManager.launchApp(bundlePath);
   }
@@ -192,7 +192,7 @@ export class AdobeBridge implements IAdobeBridge {
   private async requireDisplayName(appId: AdobeAppId): Promise<string> {
     const displayName = await this.resolveDisplayName(appId);
     if (!displayName) {
-      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} kurulu değil.`);
+      throw new Error(`${ADOBE_APP_DESCRIPTORS[appId].label} is not installed.`);
     }
     return displayName;
   }

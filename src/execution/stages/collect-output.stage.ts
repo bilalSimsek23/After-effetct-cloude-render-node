@@ -34,7 +34,7 @@ export class CollectOutputStage implements IExecutionStage {
 
     const outputFilePath = context.state.outputFilePath;
     if (!outputFilePath) {
-      throw new OutputValidationError('state.outputFilePath boş — doğrulanacak bir çıktı yok.', {
+      throw new OutputValidationError('state.outputFilePath is empty — there is no output to validate.', {
         jobUuid: context.job.jobUuid,
       });
     }
@@ -43,12 +43,12 @@ export class CollectOutputStage implements IExecutionStage {
     if (!stats) {
       throw new RenderNodeError(
         ErrorCode.OUTPUT_NOT_FOUND,
-        `Render çıktısı bulunamadı: ${outputFilePath}`,
+        `Render output not found: ${outputFilePath}`,
         { jobUuid: context.job.jobUuid, outputFilePath },
       );
     }
     if (stats.size < MIN_VALID_OUTPUT_BYTES) {
-      throw new OutputValidationError(`Render çıktısı boş: ${outputFilePath} (size=${stats.size})`, {
+      throw new OutputValidationError(`Render output is empty: ${outputFilePath} (size=${stats.size})`, {
         jobUuid: context.job.jobUuid,
         outputFilePath,
         size: stats.size,
@@ -57,7 +57,7 @@ export class CollectOutputStage implements IExecutionStage {
 
     const hash = await hashFileSha256(outputFilePath);
 
-    context.logger.info('Render çıktısı doğrulandı', {
+    context.logger.info('Render output validated', {
       jobUuid: context.job.jobUuid,
       outputFilePath,
       size: stats.size,
@@ -66,13 +66,13 @@ export class CollectOutputStage implements IExecutionStage {
 
     try {
       context.state.outputMetadata = await collectOutputMetadata(outputFilePath);
-      context.logger.info('Render çıktı metadata toplandı (ffprobe)', {
+      context.logger.info('Render output metadata collected (ffprobe)', {
         jobUuid: context.job.jobUuid,
         outputFilePath,
         ...context.state.outputMetadata,
       });
     } catch (error) {
-      context.logger.error('Render çıktı metadata toplama başarısız (render başarısız sayılmadı)', {
+      context.logger.error('Render output metadata collection failed (render not treated as failed)', {
         jobUuid: context.job.jobUuid,
         outputFilePath,
         errorCode: ErrorCode.OUTPUT_METADATA_FAILED,

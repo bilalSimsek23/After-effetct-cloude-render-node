@@ -45,9 +45,16 @@ const APP_SUPPORT_FOLDER_NAME = 'MotionCurate Render Node';
 const DEFAULT_MAX_JOB_WORKSPACE_AGE_MS = 24 * 60 * 60 * 1000; // 24h
 
 /**
- * Owns Render Node's own working directory under
- * ~/Library/Application Support/MotionCurate Render Node/ — never the
- * Desktop.
+ * Owns Render Node's own working directory — never the Desktop — under the
+ * platform's real per-user app-data location:
+ *  - macOS: ~/Library/Application Support/MotionCurate Render Node/
+ *  - Windows: %APPDATA%\MotionCurate Render Node\ (i.e.
+ *    C:\Users\<user>\AppData\Roaming\...) — confirmed empirically
+ *    (2026-08-30) that the macOS path literally does not exist as a real
+ *    folder concept on Windows; it previously resolved to the nonsensical
+ *    but technically creatable `<home>\Library\Application Support\...`,
+ *    which worked by accident (mkdir doesn't care that "Library" isn't a
+ *    real Windows convention) rather than by design.
  *
  * Two layers:
  *  - Node-level (workspace/logs/scripts/temp/cache/jobs): one per node,
@@ -60,7 +67,10 @@ export class AdobeWorkspaceService {
   private readonly paths: WorkspacePaths;
 
   constructor(private readonly logger: Logger) {
-    const root = resolve(homedir(), 'Library', 'Application Support', APP_SUPPORT_FOLDER_NAME);
+    const root =
+      process.platform === 'win32'
+        ? resolve(process.env['APPDATA'] ?? resolve(homedir(), 'AppData', 'Roaming'), APP_SUPPORT_FOLDER_NAME)
+        : resolve(homedir(), 'Library', 'Application Support', APP_SUPPORT_FOLDER_NAME);
 
     this.paths = {
       root,
@@ -91,7 +101,7 @@ export class AdobeWorkspaceService {
       await mkdir(directory, { recursive: true });
     }
 
-    this.logger.info('Workspace oluşturuldu', { root: this.paths.root });
+    this.logger.info('Workspace created', { root: this.paths.root });
 
     return this.getPaths();
   }
@@ -138,7 +148,7 @@ export class AdobeWorkspaceService {
       await mkdir(directory, { recursive: true });
     }
 
-    this.logger.info('Job Workspace oluşturuldu', {
+    this.logger.info('Job Workspace created', {
       jobUuid,
       root: paths.root,
       event: 'render_workspace_created',
@@ -171,7 +181,7 @@ export class AdobeWorkspaceService {
   async deleteJobWorkspace(jobUuid: string): Promise<void> {
     const paths = this.getJobWorkspacePaths(jobUuid);
     await rm(paths.root, { recursive: true, force: true });
-    this.logger.info('Job Workspace silindi', {
+    this.logger.info('Job Workspace deleted', {
       jobUuid,
       event: 'render_workspace_cleanup_completed',
     });
@@ -225,7 +235,7 @@ export class AdobeWorkspaceService {
     }
 
     if (deletedJobUuids.length > 0) {
-      this.logger.info("Süresi dolmuş Job Workspace'ler temizlendi", {
+      this.logger.info('Expired Job Workspaces cleaned up', {
         jobUuids: deletedJobUuids,
         event: 'render_workspace_cleanup_completed',
       });

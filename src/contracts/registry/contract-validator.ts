@@ -5,7 +5,7 @@ export class ContractValidationError extends Error {
     contractName: string,
     public readonly issues: string[],
   ) {
-    super(`"${contractName}" contract doğrulaması başarısız: ${issues.join(', ')}`);
+    super(`"${contractName}" contract validation failed: ${issues.join(', ')}`);
     this.name = 'ContractValidationError';
   }
 }
@@ -46,20 +46,20 @@ export abstract class BaseContractValidator<
 
   private validateEnvelope(value: unknown): string[] {
     if (typeof value !== 'object' || value === null) {
-      return ['payload bir JSON nesnesi olmalı'];
+      return ['payload must be a JSON object'];
     }
 
     const record = value as Record<string, unknown>;
     const issues: string[] = [];
 
     if (record.schema !== this.expectedSchema) {
-      issues.push(`schema "${this.expectedSchema}" olmalı, "${String(record.schema)}" geldi`);
+      issues.push(`schema must be "${this.expectedSchema}", got "${String(record.schema)}"`);
     }
     if (typeof record.version !== 'string' || record.version === '') {
-      issues.push('version boş olmayan bir string olmalı');
+      issues.push('version must be a non-empty string');
     }
     if (typeof record.createdAt !== 'string' || record.createdAt === '') {
-      issues.push('createdAt boş olmayan bir string olmalı');
+      issues.push('createdAt must be a non-empty string');
     }
 
     return issues;

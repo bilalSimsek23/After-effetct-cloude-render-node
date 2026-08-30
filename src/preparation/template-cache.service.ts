@@ -32,7 +32,7 @@ export class TemplateCacheService implements ITemplateCacheService {
     await mkdir(dirname(this.cacheFilePath), { recursive: true });
     await writeFile(this.cacheFilePath, JSON.stringify(cache, null, 2), 'utf-8');
 
-    this.logger.debug('Template cache güncellendi', { templateUuid, assetHash });
+    this.logger.debug('Template cache updated', { templateUuid, assetHash });
   }
 
   private async readCache(): Promise<Record<string, string>> {

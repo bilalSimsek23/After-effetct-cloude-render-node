@@ -48,19 +48,19 @@ export class AssetValidator extends BaseContractValidator<AssetContract> {
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (typeof record.uuid !== 'string' || record.uuid === '')
-      issues.push('uuid boş olmayan string olmalı');
+      issues.push('uuid must be a non-empty string');
     if (typeof record.hash !== 'string' || record.hash === '')
-      issues.push('hash boş olmayan string olmalı');
+      issues.push('hash must be a non-empty string');
     if (typeof record.size !== 'number' || record.size < 0)
-      issues.push('size negatif olmayan sayı olmalı');
+      issues.push('size must be a non-negative number');
     if (!Object.values(AssetType).includes(record.type as AssetType)) {
-      issues.push(`type geçerli bir AssetType olmalı, "${String(record.type)}" geçersiz`);
+      issues.push(`type must be a valid AssetType; "${String(record.type)}" is invalid`);
     }
     if (typeof record.downloadUrl !== 'string' || record.downloadUrl === '') {
-      issues.push('downloadUrl boş olmayan string olmalı');
+      issues.push('downloadUrl must be a non-empty string');
     }
     if (typeof record.cacheKey !== 'string' || record.cacheKey === '') {
-      issues.push('cacheKey boş olmayan string olmalı');
+      issues.push('cacheKey must be a non-empty string');
     }
     return issues;
   }

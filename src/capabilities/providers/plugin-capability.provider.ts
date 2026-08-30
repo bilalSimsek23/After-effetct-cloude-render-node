@@ -19,7 +19,7 @@ export class PluginCapabilityProvider implements ICapabilityProvider<
 
   async collect(): Promise<CapabilityInstalledPluginEntry[]> {
     this.logger.debug(
-      'PluginCapabilityProvider: gerçek plugin taraması henüz yok, boş liste döndürülüyor',
+      'PluginCapabilityProvider: no real plugin scanning yet, returning empty list',
     );
     return [];
   }

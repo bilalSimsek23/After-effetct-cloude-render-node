@@ -59,7 +59,7 @@ export async function collectOutputMetadata(
     );
     stdout = result.stdout;
   } catch (error) {
-    throw new FfprobeMetadataError('ffprobe çalıştırılamadı', {
+    throw new FfprobeMetadataError('ffprobe could not be executed', {
       filePath,
       error: (error as Error).message,
     });
@@ -69,7 +69,7 @@ export async function collectOutputMetadata(
   try {
     parsed = JSON.parse(stdout) as FfprobeOutput;
   } catch (error) {
-    throw new FfprobeMetadataError('ffprobe çıktısı JSON olarak ayrıştırılamadı', {
+    throw new FfprobeMetadataError('ffprobe output could not be parsed as JSON', {
       filePath,
       error: (error as Error).message,
     });

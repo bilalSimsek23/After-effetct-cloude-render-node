@@ -34,13 +34,13 @@ export class NodeRegistrationService {
 
     if (environmentResult.status !== SystemReadyStatus.READY) {
       throw new NodeRegistrationError(
-        `Adobe Runtime hazır değil, node başlatılamıyor: ${environmentResult.errors.join(', ')}`,
+        `Adobe Runtime not ready, node cannot start: ${environmentResult.errors.join(', ')}`,
       );
     }
 
     const report = await this.capabilityRegistry.register();
 
-    this.logger.info('Node hazır (kimlik config üzerinden önceden sağlanmış)', {
+    this.logger.info('Node ready (identity pre-provisioned via config)', {
       nodeUuid: this.config.nodeUuid,
     });
 

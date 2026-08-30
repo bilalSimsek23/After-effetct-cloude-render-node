@@ -79,7 +79,7 @@ export class UnsupportedVariableTypeError extends RenderNodeError {
   ) {
     super(
       ErrorCode.VARIABLE_UNSUPPORTED_TYPE,
-      `Desteklenmeyen değişken tipi: "${type}" (key="${key}")`,
+      `Unsupported variable type: "${type}" (key="${key}")`,
       { type, key },
     );
   }
@@ -99,7 +99,7 @@ export class PropertyAddressResolutionError extends RenderNodeError {
   ) {
     super(
       ErrorCode.VARIABLE_ADDRESS_RESOLUTION_FAILED,
-      `Değişken adresi çözümlenemedi (key="${key}"): ${reason}`,
+      `Variable address could not be resolved (key="${key}"): ${reason}`,
       { key, reason },
     );
   }
@@ -109,7 +109,7 @@ export class VariableApplicationError extends RenderNodeError {
   constructor(public readonly report: VariableApplicationReport) {
     super(
       ErrorCode.VARIABLE_APPLICATION_FAILED,
-      `Değişken uygulama başarısız: ${report.failedCount} hata — ${report.errors.join('; ')}`,
+      `Variable application failed: ${report.failedCount} error(s) — ${report.errors.join('; ')}`,
       { report },
     );
   }

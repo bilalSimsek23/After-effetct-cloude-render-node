@@ -25,7 +25,7 @@ export class ExpressionInstallerService implements IExpressionInstallerService {
       this.expressionsDirectory,
     );
 
-    this.logger.info('Expression dosyaları kuruldu', {
+    this.logger.info('Expression files installed', {
       expressionsDirectory: this.expressionsDirectory,
       installed: result.copied,
       skipped: result.skipped,

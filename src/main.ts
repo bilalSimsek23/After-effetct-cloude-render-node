@@ -83,7 +83,7 @@ async function bootstrap(): Promise<void> {
   // signed with it will verify.
   nodeIdentity.setNodeUuid(config.nodeUuid);
 
-  logger.info('Render Node başlatılıyor (Production Orchestrator)', {
+  logger.info('Starting Render Node (Production Orchestrator)', {
     nodeName: config.nodeName,
     server: config.server,
     engine: config.engine,
@@ -307,14 +307,14 @@ async function bootstrap(): Promise<void> {
   try {
     await nodeRunner.start();
   } catch (error) {
-    logger.error('Render Node başlatılamadı', { error: (error as Error).message });
+    logger.error('Failed to start Render Node', { error: (error as Error).message });
     process.exit(1);
   }
 }
 
 function registerGlobalErrorHandlers(logger: Logger): void {
   process.on('uncaughtException', (error) => {
-    logger.error('Yakalanmamış hata (uncaughtException)', {
+    logger.error('Uncaught exception (uncaughtException)', {
       error: error.message,
       stack: error.stack,
     });
@@ -322,7 +322,7 @@ function registerGlobalErrorHandlers(logger: Logger): void {
 
   process.on('unhandledRejection', (reason) => {
     const error = reason instanceof Error ? reason : new Error(String(reason));
-    logger.error('Yakalanmamış promise reddi (unhandledRejection)', {
+    logger.error('Unhandled promise rejection (unhandledRejection)', {
       error: error.message,
       stack: error.stack,
     });
@@ -334,7 +334,7 @@ function registerShutdownHandlers(logger: Logger, nodeRunner: NodeRunner): void 
     void nodeRunner
       .shutdown(signal)
       .catch((error: unknown) => {
-        logger.error('Kapatma sırasında hata oluştu', { error: (error as Error).message });
+        logger.error('Error occurred during shutdown', { error: (error as Error).message });
       })
       .finally(() => process.exit(0));
   };
@@ -347,7 +347,7 @@ bootstrap().catch((error: unknown) => {
   if (error instanceof ConfigLoadError) {
     console.error(`[FATAL] ${error.message}`);
   } else {
-    console.error('[FATAL] Render Node başlatılamadı:', error);
+    console.error('[FATAL] Failed to start Render Node:', error);
   }
   process.exit(1);
 });

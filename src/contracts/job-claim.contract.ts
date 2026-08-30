@@ -35,11 +35,11 @@ export class JobClaimValidator extends BaseContractValidator<JobClaimContract> {
     const issues: string[] = [];
     for (const field of ['jobUuid', 'nodeUuid', 'claimedAt']) {
       if (typeof record[field] !== 'string' || record[field] === '') {
-        issues.push(`${field} boş olmayan string olmalı`);
+        issues.push(`${field} must be a non-empty string`);
       }
     }
     if (typeof record.lease !== 'object' || record.lease === null)
-      issues.push('lease bir nesne olmalı');
+      issues.push('lease must be an object');
     return issues;
   }
 }

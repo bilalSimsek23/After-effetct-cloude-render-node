@@ -119,14 +119,14 @@ export class JobProcessor implements JobRuntimeStats {
       // immediately rather than silently dropping the push: otherwise the
       // job just sits Assigned to this node until claim_expires_at lapses
       // (several minutes) before it becomes eligible for reassignment.
-      this.logger.warn('Maksimum eşzamanlı iş sınırına ulaşıldı, push bildirimi reddediliyor', {
+      this.logger.warn('Maximum concurrent job limit reached, rejecting push notification', {
         jobUuid,
         activeJobCount: this.activeJobCount,
       });
       await this.laravelApiClient
-        .declineRenderJob(jobUuid, 'Node maksimum eşzamanlı iş sınırına ulaştı.')
+        .declineRenderJob(jobUuid, 'Node reached maximum concurrent job limit.')
         .catch((error) => {
-          this.logger.error('İş reddi Laravel’e iletilemedi', {
+          this.logger.error('Failed to forward job decline to Laravel', {
             jobUuid,
             error: (error as Error).message,
           });
@@ -138,7 +138,7 @@ export class JobProcessor implements JobRuntimeStats {
     try {
       payload = await this.laravelApiClient.claimRenderJob(jobUuid, claimToken);
     } catch (error) {
-      this.logger.error('İş sahiplenme (claim) başarısız oldu', {
+      this.logger.error('Job claim failed', {
         jobUuid,
         error: (error as Error).message,
       });
@@ -174,21 +174,21 @@ export class JobProcessor implements JobRuntimeStats {
     const { jobUuid, templateUuid, renderType } = job;
     this.activeJobCount += 1;
     this.activeJobUuids.add(jobUuid);
-    this.logger.info('Yeni iş alındı', { jobUuid, templateUuid });
+    this.logger.info('New job received', { jobUuid, templateUuid });
 
     try {
       const capabilityReport = this.capabilityRegistry.getCapabilities();
       if (!capabilityReport) {
-        throw new Error('CapabilityRegistry henüz bir Capability Report üretmedi.');
+        throw new Error('CapabilityRegistry has not produced a Capability Report yet.');
       }
 
       const renderProfile = this.renderProfileRegistry.find(renderType as RenderProfileCode);
       if (!renderProfile) {
-        throw new Error(`"${renderType}" için bir Render Profile bulunamadı.`);
+        throw new Error(`No Render Profile found for "${renderType}".`);
       }
 
       if (!projectAsset) {
-        throw new Error('Laravel bu iş için bir proje dosyası (projectAsset) döndürmedi.');
+        throw new Error('Laravel did not return a project file (projectAsset) for this job.');
       }
 
       const nodePaths = this.workspaceService.getPaths();
@@ -255,7 +255,7 @@ export class JobProcessor implements JobRuntimeStats {
           ? `[${error.code}] ${error.message}`
           : (error as Error).message;
 
-      this.logger.error('İş işlenirken hata oluştu', {
+      this.logger.error('Error occurred while processing job', {
         jobUuid,
         error: message,
         errorCode: error instanceof RenderNodeError ? error.code : null,
@@ -272,7 +272,7 @@ export class JobProcessor implements JobRuntimeStats {
       try {
         await this.workspaceService.deleteJobWorkspace(jobUuid);
       } catch (error) {
-        this.logger.error('Job Workspace temizliği başarısız oldu', {
+        this.logger.error('Job workspace cleanup failed', {
           jobUuid,
           event: 'render_workspace_cleanup_failed',
           error: (error as Error).message,

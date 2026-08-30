@@ -26,7 +26,7 @@ export class UploadOutputStage implements IExecutionStage {
 
     context.state.uploadedUrl = uploadedUrl;
 
-    context.logger.info('Çıktı yükleme adımı tamamlandı', {
+    context.logger.info('Output upload step completed', {
       jobUuid: context.job.jobUuid,
       uploadedUrl,
     });

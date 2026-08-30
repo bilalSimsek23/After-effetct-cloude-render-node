@@ -27,7 +27,7 @@ export class ScriptPreparerService implements IScriptPreparerService {
     const scriptsDirectory = resolve(jobWorkspace.temp, 'scripts');
     const result = await copyDirectoryContents(resolve(extractedDir, 'scripts'), scriptsDirectory);
 
-    this.logger.info('Scriptler job workspace içine hazırlandı', {
+    this.logger.info('Scripts prepared into job workspace', {
       jobUuid: jobWorkspace.jobUuid,
       scriptsDirectory,
       prepared: result.copied,

@@ -52,10 +52,10 @@ export class SelfUpdateLoop {
 
   start(): void {
     if (!this.config.enabled) {
-      this.logger.info('Self-update devre dışı (config.json\'da autoUpdate.enabled=false veya tanımsız)');
+      this.logger.info('Self-update disabled (autoUpdate.enabled=false or undefined in config.json)');
       return;
     }
-    this.logger.info('Self-update etkin', {
+    this.logger.info('Self-update enabled', {
       branch: this.config.branch,
       checkIntervalMinutes: this.config.checkIntervalMinutes,
     });
@@ -83,7 +83,7 @@ export class SelfUpdateLoop {
     try {
       await this.checkAndApply();
     } catch (error) {
-      this.logger.error('Self-update kontrolü sırasında beklenmeyen hata', {
+      this.logger.error('Unexpected error during self-update check', {
         error: (error as Error).message,
       });
     } finally {
@@ -102,12 +102,12 @@ export class SelfUpdateLoop {
     const remoteSha = (await this.run(`git rev-parse origin/${branch}`)).trim();
 
     if (localSha === remoteSha) {
-      this.logger.debug('Self-update: node güncel', { sha: localSha });
+      this.logger.debug('Self-update: node is up to date', { sha: localSha });
       return;
     }
 
     if (remoteSha === this.lastFailedSha) {
-      this.logger.debug('Self-update: bu commit daha önce build\'i geçemedi, yeni bir commit gelene kadar tekrar denenmeyecek', {
+      this.logger.debug('Self-update: this commit already failed the build before, will not retry until a newer commit arrives', {
         sha: remoteSha,
       });
       return;
@@ -116,11 +116,11 @@ export class SelfUpdateLoop {
     // Re-check immediately before touching anything - a job could have
     // started between the tick firing and reaching this point.
     if (this.jobRuntimeStats.getRunningJobCount() > 0) {
-      this.logger.debug('Self-update: aktif job var, bu tur atlanıyor');
+      this.logger.debug('Self-update: active job in progress, skipping this round');
       return;
     }
 
-    this.logger.info('Self-update: yeni commit bulundu, güncelleme uygulanıyor', {
+    this.logger.info('Self-update: new commit found, applying update', {
       from: localSha,
       to: remoteSha,
     });
@@ -132,14 +132,14 @@ export class SelfUpdateLoop {
     } catch (error) {
       this.lastFailedSha = remoteSha;
       this.logger.error(
-        'Self-update BAŞARISIZ - node önceki çalışan koda geri alınıyor, bu commit tekrar denenmeyecek',
+        'Self-update FAILED - rolling node back to previous working code, this commit will not be retried',
         { error: (error as Error).message, attemptedSha: remoteSha },
       );
       try {
         await this.run(`git reset --hard ${localSha}`);
       } catch (resetError) {
         this.logger.error(
-          'Self-update geri alma (rollback) da başarısız oldu - bu node elle kontrol edilmeli',
+          'Self-update rollback also failed - this node must be checked manually',
           { error: (resetError as Error).message },
         );
       }
@@ -147,7 +147,7 @@ export class SelfUpdateLoop {
     }
 
     this.logger.info(
-      'Self-update başarılı, node yeniden başlatılıyor (launchd KeepAlive otomatik ayağa kaldıracak)',
+      'Self-update successful, node restarting (launchd KeepAlive will bring it back up automatically)',
       { newSha: remoteSha },
     );
 

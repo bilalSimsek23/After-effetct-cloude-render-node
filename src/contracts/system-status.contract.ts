@@ -45,10 +45,10 @@ export class SystemStatusValidator extends BaseContractValidator<SystemStatusCon
     const issues: string[] = [];
     if (!Object.values(SystemStatusCode).includes(record.status as SystemStatusCode)) {
       issues.push(
-        `status geçerli bir SystemStatusCode olmalı, "${String(record.status)}" geçersiz`,
+        `status must be a valid SystemStatusCode; "${String(record.status)}" is invalid`,
       );
     }
-    if (!Array.isArray(record.errors)) issues.push('errors dizi olmalı');
+    if (!Array.isArray(record.errors)) issues.push('errors must be an array');
     return issues;
   }
 }

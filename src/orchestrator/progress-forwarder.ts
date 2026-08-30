@@ -45,7 +45,7 @@ export class ProgressForwarder implements IProgressService {
 
     await this.laravelApiClient.sendJobProgress(jobUuid, progress);
 
-    this.logger.info("İlerleme Laravel'e iletildi", {
+    this.logger.info("Progress forwarded to Laravel", {
       jobUuid,
       stageName,
       status: progress.status,

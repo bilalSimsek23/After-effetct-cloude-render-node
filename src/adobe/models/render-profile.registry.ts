@@ -21,7 +21,7 @@ const FALLBACK_PROFILES: Record<string, RenderProfileConfigEntry> = {
     isActive: true,
     rendererSettings: {
       [ADOBE_OUTPUT_MODULE_TEMPLATE_KEY]: 'H.264 - Match Render Settings -  5 Mbps',
-      [WATERMARK_TEXT_KEY]: 'MOTIONCURATE ÖNİZLEME',
+      [WATERMARK_TEXT_KEY]: 'MOTIONCURATE PREVIEW',
       [RESOLUTION_FACTOR_KEY]: 'Half',
     },
   },

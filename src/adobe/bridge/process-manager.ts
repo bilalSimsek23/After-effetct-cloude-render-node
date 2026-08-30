@@ -46,7 +46,7 @@ export class ProcessManager implements IUrlOpener {
     try {
       entries = await readdir(APPLICATIONS_DIR, { withFileTypes: true });
     } catch (error) {
-      this.logger.warn('/Applications dizini okunamadı', { error: (error as Error).message });
+      this.logger.warn('Failed to read /Applications directory', { error: (error as Error).message });
       return null;
     }
 
@@ -83,7 +83,7 @@ export class ProcessManager implements IUrlOpener {
       const version = stdout.trim();
       return version.length > 0 ? version : null;
     } catch (error) {
-      this.logger.warn('Uygulama versiyonu okunamadı', {
+      this.logger.warn('Failed to read application version', {
         bundlePath,
         error: (error as Error).message,
       });

@@ -54,7 +54,7 @@ export class AdobeRuntimeCapabilityProvider implements ICapabilityProvider<Adobe
     const probed = JSON.parse(raw) as ProbedCapabilities;
 
     if (probed.probeError) {
-      this.logger.warn('Adobe runtime capability probe kısmen başarısız oldu', {
+      this.logger.warn('Adobe runtime capability probe partially failed', {
         probeError: probed.probeError,
       });
     }

@@ -8,7 +8,7 @@ const DEFAULT_CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 export class CapabilityLoopNotStartedError extends Error {
   constructor() {
     super(
-      'CapabilityLoop.start(), CapabilityRegistry.register() çağrılmadan önce çalıştırılamaz — henüz toplanmış bir Capability Report yok.',
+      'CapabilityLoop.start() cannot run before CapabilityRegistry.register() — no Capability Report has been collected yet.',
     );
     this.name = 'CapabilityLoopNotStartedError';
   }
@@ -76,7 +76,7 @@ export class CapabilityLoop {
         await this.sendReport(updated, comparison.changedFields);
       }
     } catch (error) {
-      this.logger.error('Capability kontrolü başarısız oldu', { error: (error as Error).message });
+      this.logger.error('Capability check failed', { error: (error as Error).message });
     } finally {
       this.scheduleNext();
     }
@@ -86,11 +86,11 @@ export class CapabilityLoop {
     try {
       await this.laravelApiClient.sendCapabilityReport(report);
       this.lastSentReport = report;
-      this.logger.info('Capability Report Laravel’e iletildi', { changedFields });
+      this.logger.info('Capability Report forwarded to Laravel', { changedFields });
     } catch (error) {
       // lastSentReport intentionally NOT updated on failure — the next
       // tick's compare() still sees this as an unsent change and retries.
-      this.logger.error('Capability Report gönderilemedi', { error: (error as Error).message });
+      this.logger.error('Failed to send Capability Report', { error: (error as Error).message });
     }
   }
 }

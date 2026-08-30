@@ -97,7 +97,7 @@ export class DependencyValidator extends BaseContractValidator<DependencyContrac
 
     for (const section of requiredSections) {
       if (!Array.isArray(record[section])) {
-        issues.push(`${section} dizi olmalı`);
+        issues.push(`${section} must be an array`);
       }
     }
 

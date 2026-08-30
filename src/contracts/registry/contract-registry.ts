@@ -4,7 +4,7 @@ import type { ContractRegistryEntry } from './contract-registry.types.js';
 
 export class ContractNotFoundError extends Error {
   constructor(name: string) {
-    super(`Registry'de kayıtlı bir Contract bulunamadı: "${name}"`);
+    super(`No Contract registered in the registry: "${name}"`);
     this.name = 'ContractNotFoundError';
   }
 }

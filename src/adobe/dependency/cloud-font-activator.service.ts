@@ -38,7 +38,7 @@ export class CloudFontActivatorService implements ICloudFontActivatorService {
 
     for (const link of links) {
       if (!this.isHttpUrl(link)) {
-        this.logger.error('Cloud font linki http(s) değil, atlanıyor', { link });
+        this.logger.error('Cloud font link is not http(s), skipping', { link });
         failed.push(link);
         continue;
       }
@@ -47,19 +47,19 @@ export class CloudFontActivatorService implements ICloudFontActivatorService {
         await this.processManager.openUrl(link);
         opened.push(link);
       } catch (error) {
-        this.logger.error('Cloud font linki açılamadı', { link, error: (error as Error).message });
+        this.logger.error('Failed to open cloud font link', { link, error: (error as Error).message });
         failed.push(link);
       }
     }
 
     if (opened.length > 0) {
       this.logger.warn(
-        'Cloud font linkleri tarayıcıda açıldı - bu makinenin Creative Cloud hesabında etkinleştirilmesi gerekebilir',
+        'Cloud font links opened in browser - may need to be activated on this machine\'s Creative Cloud account',
         { opened },
       );
     }
     if (failed.length > 0) {
-      this.logger.error('Bazı cloud font linkleri açılamadı - manuel kontrol gerekli', { failed });
+      this.logger.error('Some cloud font links failed to open - manual check required', { failed });
     }
 
     return { opened, failed };

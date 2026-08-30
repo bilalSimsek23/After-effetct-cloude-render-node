@@ -41,7 +41,7 @@ export class PushServer {
       this.server.once('error', rejectPromise);
       this.server.listen(this.config.pushServer.port, () => {
         this.server.removeListener('error', rejectPromise);
-        this.logger.info('Push server dinlemede', { port: this.config.pushServer.port });
+        this.logger.info('Push server listening', { port: this.config.pushServer.port });
         resolvePromise();
       });
     });
@@ -63,7 +63,7 @@ export class PushServer {
     try {
       raw = await this.readBody(request);
     } catch (error) {
-      this.logger.warn('Push bildirimi gövdesi okunamadı', { error: (error as Error).message });
+      this.logger.warn('Failed to read push notification body', { error: (error as Error).message });
       response.writeHead(400).end();
       return;
     }
@@ -82,7 +82,7 @@ export class PushServer {
     );
 
     if (!verified) {
-      this.logger.warn('Push bildirimi doğrulanamadı (geçersiz imza/süre/alan)');
+      this.logger.warn('Push notification verification failed (invalid signature/timestamp/field)');
       response.writeHead(401).end();
       return;
     }
@@ -92,7 +92,7 @@ export class PushServer {
     this.jobProcessor
       .handleAssignedJob(verified.jobUuid, verified.claimToken)
       .catch((error: unknown) => {
-        this.logger.error('Push sonrası iş işleme başarısız oldu', {
+        this.logger.error('Job processing after push failed', {
           jobUuid: verified.jobUuid,
           error: (error as Error).message,
         });
@@ -107,7 +107,7 @@ export class PushServer {
       request.on('data', (chunk: Buffer) => {
         totalBytes += chunk.length;
         if (totalBytes > MAX_BODY_BYTES) {
-          rejectPromise(new Error('İstek gövdesi çok büyük.'));
+          rejectPromise(new Error('Request body too large.'));
           request.destroy();
           return;
         }

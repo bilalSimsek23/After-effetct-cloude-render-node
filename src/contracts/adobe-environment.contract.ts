@@ -46,17 +46,17 @@ export class AdobeEnvironmentValidator extends BaseContractValidator<AdobeEnviro
     const issues: string[] = [];
     if (!Object.values(SystemStatusCode).includes(record.status as SystemStatusCode)) {
       issues.push(
-        `status geçerli bir SystemStatusCode olmalı, "${String(record.status)}" geçersiz`,
+        `status must be a valid SystemStatusCode; "${String(record.status)}" is invalid`,
       );
     }
-    if (!Array.isArray(record.errors)) issues.push('errors dizi olmalı');
+    if (!Array.isArray(record.errors)) issues.push('errors must be an array');
     for (const field of ['afterEffects', 'mediaEncoder']) {
       if (typeof record[field] !== 'object' || record[field] === null) {
-        issues.push(`${field} bir nesne olmalı`);
+        issues.push(`${field} must be an object`);
       }
     }
     for (const field of ['sameMajorVersionFamily', 'dynamicLinkAvailable', 'workspaceReady']) {
-      if (typeof record[field] !== 'boolean') issues.push(`${field} boolean olmalı`);
+      if (typeof record[field] !== 'boolean') issues.push(`${field} must be a boolean`);
     }
     return issues;
   }

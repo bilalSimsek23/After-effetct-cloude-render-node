@@ -28,7 +28,7 @@ export class AdobeSession {
     private readonly workspace: JobWorkspacePaths,
     private readonly logger: Logger,
   ) {
-    this.logger.info('AdobeSession başlatıldı', { jobUuid: this.jobUuid });
+    this.logger.info('AdobeSession started', { jobUuid: this.jobUuid });
   }
 
   getAfterEffectsEngine(): IAfterEffectsEngine {
@@ -57,12 +57,12 @@ export class AdobeSession {
 
     this.disposed = true;
     const durationMs = Date.now() - this.startedAt.getTime();
-    this.logger.info('AdobeSession sonlandırıldı', { jobUuid: this.jobUuid, durationMs });
+    this.logger.info('AdobeSession disposed', { jobUuid: this.jobUuid, durationMs });
   }
 
   private assertNotDisposed(): void {
     if (this.disposed) {
-      throw new Error(`AdobeSession (${this.jobUuid}) zaten sonlandırılmış, kullanılamaz.`);
+      throw new Error(`AdobeSession (${this.jobUuid}) is already disposed and cannot be used.`);
     }
   }
 }

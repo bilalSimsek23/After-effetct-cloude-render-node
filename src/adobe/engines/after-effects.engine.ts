@@ -80,13 +80,13 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
   }
 
   async launch(): Promise<void> {
-    this.logger.info('After Effects başlatılıyor');
+    this.logger.info('Launching After Effects');
     await this.bridge.launchApp(AdobeAppId.AFTER_EFFECTS);
   }
 
   async waitUntilReady(timeoutMs: number = DEFAULT_READY_TIMEOUT_MS): Promise<void> {
     await withTimeout(this.pollUntilReady(), timeoutMs, 'AfterEffects.waitUntilReady');
-    this.logger.info('After Effects hazır');
+    this.logger.info('After Effects ready');
   }
 
   async openProject(path: string): Promise<void> {
@@ -126,7 +126,7 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
 
     if (!openedFilePath) {
       throw new ProjectOpenError(
-        'Proje açıldıktan sonra app.project.file boş kaldı - muhtemelen After Effects sürüm dönüştürme diyaloğu projeyi gerçekten yükleyemedi.',
+        'app.project.file was empty after opening the project - the After Effects version-conversion dialog probably failed to actually load the project.',
         { projectFilePath: path },
       );
     }
@@ -180,7 +180,7 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
 
     const report = await this.readApplicationReport(reportFilePath);
 
-    this.logger.info('Değişkenler uygulandı', {
+    this.logger.info('Variables applied', {
       updatedCount: report.updatedCount,
       skippedCount: report.skippedCount,
       failedCount: report.failedCount,

@@ -62,13 +62,13 @@ export class AdobeRuntimeService {
         errors: checkResult.errors,
       });
     } catch (error) {
-      this.logger.warn('Sistem durumu Laravel\'e bildirilemedi (endpoint henüz yok olabilir)', {
+      this.logger.warn('Failed to report system status to Laravel (endpoint may not exist yet)', {
         error: (error as Error).message,
       });
     }
 
     if (checkResult.status !== SystemReadyStatus.READY) {
-      this.logger.error('Adobe Runtime başlatılamadı: Environment Check başarısız', {
+      this.logger.error('Adobe Runtime failed to start: Environment Check failed', {
         errors: checkResult.errors,
       });
       return checkResult;
@@ -80,13 +80,13 @@ export class AdobeRuntimeService {
     if (this.launchedAfterEffects) {
       await this.afterEffectsEngine.launch();
     } else {
-      this.logger.info('After Effects zaten çalışıyor, yeniden başlatılmadı');
+      this.logger.info('After Effects is already running, not relaunched');
     }
 
     await this.afterEffectsEngine.waitUntilReady();
 
     this.ready = true;
-    this.logger.info('Adobe Runtime hazır');
+    this.logger.info('Adobe Runtime ready');
 
     return checkResult;
   }
@@ -99,12 +99,12 @@ export class AdobeRuntimeService {
     if (this.launchedAfterEffects) {
       await this.afterEffectsEngine.shutdown();
     } else {
-      this.logger.debug('After Effects bu runtime tarafından başlatılmadı, kapatılmıyor');
+      this.logger.debug('After Effects was not launched by this runtime, not shutting it down');
     }
 
     this.ready = false;
     this.launchedAfterEffects = false;
-    this.logger.info('Adobe Runtime kapatıldı');
+    this.logger.info('Adobe Runtime shut down');
   }
 
   isReady(): boolean {
@@ -119,11 +119,11 @@ export class AdobeRuntimeService {
    */
   async createSession(jobUuid: string): Promise<AdobeSession> {
     if (!this.ready) {
-      throw new Error('Adobe Runtime henüz hazır değil, AdobeSession oluşturulamaz.');
+      throw new Error('Adobe Runtime is not ready yet, cannot create AdobeSession.');
     }
 
     if (this.activeSessions.has(jobUuid)) {
-      throw new Error(`Bu job_uuid için zaten bir AdobeSession var: ${jobUuid}`);
+      throw new Error(`An AdobeSession already exists for this job_uuid: ${jobUuid}`);
     }
 
     const jobWorkspace = await this.workspaceService.createJobWorkspace(jobUuid);

@@ -50,7 +50,7 @@ export class ProjectExtractor implements IProjectExtractor {
       const currentDir = resolve(rootDir, `depth-${depth}`);
       new AdmZip(currentArchivePath).extractAllTo(currentDir, true);
 
-      this.logger.info('Proje arşivi extract edildi', {
+      this.logger.info('Project archive extracted', {
         depth,
         archivePath: currentArchivePath,
         destinationDir: currentDir,
@@ -67,7 +67,7 @@ export class ProjectExtractor implements IProjectExtractor {
       );
       if (!nestedArchivePath) {
         throw new ProjectExtractionError(
-          `"${currentArchivePath}" içinde ne .aep dosyası ne de iç içe bir arşiv bulunamadı.`,
+          `Found neither a .aep file nor a nested archive inside "${currentArchivePath}".`,
         );
       }
 
@@ -75,7 +75,7 @@ export class ProjectExtractor implements IProjectExtractor {
     }
 
     throw new ProjectExtractionError(
-      `Maksimum extraction derinliğine (${MAX_EXTRACTION_DEPTH}) ulaşıldı, .aep dosyası bulunamadı.`,
+      `Reached maximum extraction depth (${MAX_EXTRACTION_DEPTH}), no .aep file found.`,
     );
   }
 

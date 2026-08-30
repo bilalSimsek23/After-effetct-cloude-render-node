@@ -66,7 +66,7 @@ export class VariableFileBuilder implements IVariableFileBuilder {
 
     if (missingKeys.length > 0) {
       throw new VariableFileBuildError(
-        `RenderJob içinde eksik zorunlu değişken(ler) var: ${missingKeys.join(', ')}`,
+        `RenderJob is missing required variable(s): ${missingKeys.join(', ')}`,
       );
     }
 
@@ -74,7 +74,7 @@ export class VariableFileBuilder implements IVariableFileBuilder {
     const variablesFilePath = resolve(jobWorkspace.variables, VARIABLES_FILE_NAME);
     await writeFile(variablesFilePath, JSON.stringify(values, null, 2), 'utf-8');
 
-    this.logger.info('variables.json oluşturuldu', {
+    this.logger.info('variables.json created', {
       variablesFilePath,
       matchedCount: manifest.variables.length,
     });

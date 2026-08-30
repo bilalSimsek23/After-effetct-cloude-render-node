@@ -158,13 +158,13 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
   }
 
   async launch(): Promise<void> {
-    this.logger.info('Media Encoder başlatılıyor');
+    this.logger.info('Launching Media Encoder');
     await this.bridge.launchApp(AdobeAppId.MEDIA_ENCODER);
   }
 
   async waitUntilReady(timeoutMs: number = DEFAULT_READY_TIMEOUT_MS): Promise<void> {
     await withTimeout(this.pollUntilReady(), timeoutMs, 'MediaEncoder.waitUntilReady');
-    this.logger.info('Media Encoder hazır');
+    this.logger.info('Media Encoder ready');
   }
 
   async enqueue(
@@ -213,12 +213,12 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
       // RENDER_CONFIGURATION_INVALID, not RENDER_QUEUE_FAILED.
       if (rawMessage.indexOf('RENDER_COMPOSITION_NOT_FOUND:') !== -1) {
         throw new RenderConfigurationError(
-          `Belirtilen renderComposition projede bulunamadı - render başka bir composition'a sessizce düşürülmedi, durduruldu: ${rawMessage}`,
+          `The specified renderComposition was not found in the project - the render was stopped instead of silently falling back to another composition: ${rawMessage}`,
           context,
         );
       }
 
-      throw new RenderQueueError(`Render Queue'ya gönderme başarısız: ${rawMessage}`, context);
+      throw new RenderQueueError(`Failed to submit to Render Queue: ${rawMessage}`, context);
     }
 
     const reportParts = (await readFile(reportFilePath, 'utf-8')).split('|');
@@ -233,14 +233,14 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
       // ambient/last-used Output Module template this machine happens to
       // have — once, an Animated GIF one, discovered only by inspecting
       // Media Encoder's own queue panel. So this is always surfaced.
-      this.logger.warn('Render preset uygulanamadı, ortamın varsayılan şablonu kullanıldı', {
+      this.logger.warn('Render preset could not be applied, the environment default template was used', {
         rendererPreset,
         templateStatus,
         actualOutputFilePath,
       });
     }
 
-    this.logger.info("Render Queue'ya gönderildi", {
+    this.logger.info('Submitted to Render Queue', {
       queueItemId,
       requestedOutputFilePath: outputFilePath,
       actualOutputFilePath,
@@ -264,13 +264,13 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
 
       if (status === RQ_ITEM_STATUS_ERR_STOPPED) {
         throw new RenderFailedError(
-          `Render hatayla durdu (render queue item #${renderQueueItemIndex}): ${outputFilePath}`,
+          `Render stopped with an error (render queue item #${renderQueueItemIndex}): ${outputFilePath}`,
           { outputFilePath, renderQueueItemIndex },
         );
       }
 
       if (status === RQ_ITEM_STATUS_DONE) {
-        this.logger.info('Render tamamlandı (render queue item DONE)', {
+        this.logger.info('Render completed (render queue item DONE)', {
           outputFilePath,
           renderQueueItemIndex,
         });
@@ -304,7 +304,7 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
         if (size === lastSize) {
           stableTicks += 1;
           if (stableTicks >= STABILITY_REQUIRED_TICKS) {
-            this.logger.info('Render tamamlandı (çıktı dosyası boyutu kararlı, render queue durumu okunamadı)', {
+            this.logger.info('Render completed (output file size stable, render queue status unreadable)', {
               outputFilePath,
               size,
             });
@@ -319,7 +319,7 @@ export class AfterEffectsRenderEngine implements IRenderEngine {
       await sleep(RENDER_POLL_INTERVAL_MS);
     }
 
-    throw new RenderTimeoutError(`Render zaman aşımına uğradı: ${outputFilePath}`, {
+    throw new RenderTimeoutError(`Render timed out: ${outputFilePath}`, {
       outputFilePath,
       renderQueueItemIndex,
       timeoutMs,

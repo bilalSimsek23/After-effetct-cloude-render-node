@@ -60,7 +60,7 @@ export class CloudflareTunnelService implements ITunnelService {
         if (!settled) {
           settled = true;
           this.logger.warn(
-            'cloudflared "bağlandı" mesajı zaman aşımına uğradı, yine de devam ediliyor',
+            'cloudflared "connected" message timed out, continuing anyway',
           );
           resolvePromise();
         }
@@ -72,7 +72,7 @@ export class CloudflareTunnelService implements ITunnelService {
           settled = true;
           rejectPromise(
             new CloudflareTunnelError(
-              `cloudflared başlatılamadı - PATH üzerinde kurulu mu kontrol edin (${error.message})`,
+              `Failed to start cloudflared - check whether it's installed on PATH (${error.message})`,
             ),
           );
         }
@@ -85,12 +85,12 @@ export class CloudflareTunnelService implements ITunnelService {
           settled = true;
           rejectPromise(
             new CloudflareTunnelError(
-              `cloudflared beklenmedik şekilde kapandı (code=${code ?? 'null'}, signal=${signal ?? 'null'})`,
+              `cloudflared exited unexpectedly (code=${code ?? 'null'}, signal=${signal ?? 'null'})`,
             ),
           );
           return;
         }
-        this.logger.warn('cloudflared tüneli kapandı', { code, signal });
+        this.logger.warn('cloudflared tunnel closed', { code, signal });
       });
 
       const onOutput = (data: Buffer): void => {
@@ -101,7 +101,7 @@ export class CloudflareTunnelService implements ITunnelService {
         if (!settled && READY_LOG_PATTERN.test(text)) {
           clearTimeout(readyTimer);
           settled = true;
-          this.logger.info('Cloudflare Tunnel bağlandı');
+          this.logger.info('Cloudflare Tunnel connected');
           resolvePromise();
         }
       };

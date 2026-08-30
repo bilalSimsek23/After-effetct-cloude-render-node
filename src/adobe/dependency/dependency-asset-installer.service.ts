@@ -24,7 +24,7 @@ export class DependencyAssetInstallerService implements IDependencyAssetInstalle
     const assetsDirectory = resolve(jobWorkspace.dependency, 'assets');
     const result = await copyDirectoryContents(resolve(extractedDir, 'assets'), assetsDirectory);
 
-    this.logger.info('Bağımlılık paketi asset’leri job workspace içine hazırlandı', {
+    this.logger.info('Dependency package assets prepared into job workspace', {
       jobUuid: jobWorkspace.jobUuid,
       assetsDirectory,
       installed: result.copied,

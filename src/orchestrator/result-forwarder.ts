@@ -23,7 +23,7 @@ export class ResultForwarder implements IResultForwarder {
   async send(jobUuid: string, result: ExecutionResult): Promise<void> {
     if (result.status === ExecutionResultStatus.COMPLETED && result.renderResult) {
       await this.laravelApiClient.sendJobCompleted(jobUuid, result.renderResult);
-      this.logger.info("Sonuç Laravel'e iletildi (COMPLETED)", { jobUuid });
+      this.logger.info("Result forwarded to Laravel (COMPLETED)", { jobUuid });
       return;
     }
 
@@ -32,6 +32,6 @@ export class ResultForwarder implements IResultForwarder {
 
   async sendFailed(jobUuid: string, errors: string[]): Promise<void> {
     await this.laravelApiClient.sendJobFailed(jobUuid, errors);
-    this.logger.warn("Sonuç Laravel'e iletildi (FAILED)", { jobUuid, errors });
+    this.logger.warn("Result forwarded to Laravel (FAILED)", { jobUuid, errors });
   }
 }

@@ -83,7 +83,7 @@ export class DependencyVerificationService implements IDependencyVerificationSer
         : DependencyVerificationStatus.MISSING_DEPENDENCIES;
 
     if (status === DependencyVerificationStatus.MISSING_DEPENDENCIES) {
-      this.logger.error('Doğrulama başarısız: eksik bağımlılıklar var', {
+      this.logger.error('Verification failed: missing dependencies', {
         missingFonts,
         missingPresets,
         missingScripts,
@@ -92,7 +92,7 @@ export class DependencyVerificationService implements IDependencyVerificationSer
         missingAssets,
       });
     } else {
-      this.logger.info('Doğrulama başarılı: tüm bağımlılıklar kurulu');
+      this.logger.info('Verification succeeded: all dependencies installed');
     }
 
     return {

@@ -38,13 +38,13 @@ export class ManifestValidator extends BaseContractValidator<ManifestContract> {
 
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
-    if (typeof record.schemaVersion !== 'string') issues.push('schemaVersion string olmalı');
-    if (typeof record.scannerVersion !== 'string') issues.push('scannerVersion string olmalı');
+    if (typeof record.schemaVersion !== 'string') issues.push('schemaVersion must be a string');
+    if (typeof record.scannerVersion !== 'string') issues.push('scannerVersion must be a string');
     if (typeof record.engine !== 'string' || record.engine === '')
-      issues.push('engine boş olmayan string olmalı');
-    if (!Array.isArray(record.variables)) issues.push('variables dizi olmalı');
+      issues.push('engine must be a non-empty string');
+    if (!Array.isArray(record.variables)) issues.push('variables must be an array');
     if (typeof record.metadata !== 'object' || record.metadata === null)
-      issues.push('metadata bir nesne olmalı');
+      issues.push('metadata must be an object');
     return issues;
   }
 }

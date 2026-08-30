@@ -17,7 +17,7 @@ export class EngineManager {
 
   registerEngine(engine: IRenderEngine): void {
     this.engines.set(engine.name, engine);
-    this.logger.info(`Render motoru kaydedildi: ${engine.name}`);
+    this.logger.info(`Render engine registered: ${engine.name}`);
   }
 
   listEngineNames(): string[] {
@@ -32,10 +32,10 @@ export class EngineManager {
     const engine = this.engines.get(job.engine);
 
     if (!engine) {
-      throw new Error(`"${job.engine}" için kayıtlı bir render motoru yok.`);
+      throw new Error(`No render engine registered for "${job.engine}".`);
     }
 
-    this.logger.info(`İş "${engine.name}" motoruna yönlendiriliyor`, { jobUuid: job.uuid });
+    this.logger.info(`Routing job to "${engine.name}" engine`, { jobUuid: job.uuid });
     await engine.execute(job);
   }
 }

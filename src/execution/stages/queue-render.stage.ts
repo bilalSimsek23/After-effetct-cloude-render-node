@@ -60,7 +60,7 @@ export class QueueRenderStage implements IExecutionStage {
         effectiveProfile = alphaProfile;
       } else {
         context.logger.warn(
-          "manifest.metadata.requiresAlpha true ama 'alpha' render profili tanımlı değil, normal profil kullanılacak",
+          "manifest.metadata.requiresAlpha is true but no 'alpha' render profile is defined, falling back to the normal profile",
           { jobUuid: context.job.jobUuid },
         );
       }
@@ -83,7 +83,7 @@ export class QueueRenderStage implements IExecutionStage {
     context.state.outputFilePath = actualOutputFilePath;
     context.state.renderQueueItemIndex = renderQueueItemIndex;
 
-    context.logger.info('Render kuyruğa eklendi', {
+    context.logger.info('Render queued', {
       jobUuid: context.job.jobUuid,
       queueItemId,
       outputFilePath: actualOutputFilePath,
@@ -120,7 +120,7 @@ export class QueueRenderStage implements IExecutionStage {
       };
     } catch (error) {
       context.logger.warn(
-        'manifest.json okunamadı (renderComposition/requiresAlpha/renderDurationSeconds varsayılanları kullanılacak)',
+        'Failed to read manifest.json (falling back to renderComposition/requiresAlpha/renderDurationSeconds defaults)',
         { jobUuid: context.job.jobUuid, manifestFilePath, error: (error as Error).message },
       );
       return { renderComposition: null, requiresAlpha: false, renderDurationSeconds: null };

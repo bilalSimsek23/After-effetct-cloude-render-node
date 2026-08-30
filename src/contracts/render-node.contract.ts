@@ -38,10 +38,10 @@ export class RenderNodeValidator extends BaseContractValidator<RenderNodeContrac
     const issues: string[] = [];
     for (const field of ['nodeUuid', 'nodeName', 'engine', 'agentVersion', 'applicationVersion']) {
       if (typeof record[field] !== 'string' || record[field] === '') {
-        issues.push(`${field} boş olmayan string olmalı`);
+        issues.push(`${field} must be a non-empty string`);
       }
     }
-    if (!Array.isArray(record.supportedEngines)) issues.push('supportedEngines dizi olmalı');
+    if (!Array.isArray(record.supportedEngines)) issues.push('supportedEngines must be an array');
     return issues;
   }
 }

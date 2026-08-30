@@ -22,7 +22,7 @@ export class LoadProjectStage implements IExecutionStage {
       throw new ExecutionStageError(
         this.name,
         ErrorCode.PROJECT_NOT_READY,
-        `PreparedProject READY değil (status=${context.preparedProject.status}), pipeline başlatılamaz.`,
+        `PreparedProject is not READY (status=${context.preparedProject.status}), pipeline cannot start.`,
         { jobUuid: context.job.jobUuid, status: context.preparedProject.status },
       );
     }
@@ -32,7 +32,7 @@ export class LoadProjectStage implements IExecutionStage {
       throw new ExecutionStageError(
         this.name,
         ErrorCode.PROJECT_FILE_PATH_MISSING,
-        'PreparedProject.projectFilePath boş.',
+        'PreparedProject.projectFilePath is empty.',
         { jobUuid: context.job.jobUuid },
       );
     }
@@ -41,7 +41,7 @@ export class LoadProjectStage implements IExecutionStage {
       context.afterEffectsEngine.openProject(projectFilePath),
     );
 
-    context.logger.info('Proje açıldı', {
+    context.logger.info('Project opened', {
       jobUuid: context.job.jobUuid,
       projectFilePath,
       event: 'render_project_opened',

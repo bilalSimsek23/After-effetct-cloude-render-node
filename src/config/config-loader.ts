@@ -32,7 +32,7 @@ export class ConfigLoader {
     for (const field of ['nodeUuid', 'apiSecret'] as const) {
       if (parsed[field] === PLACEHOLDER_VALUE) {
         console.warn(
-          `[config] "${field}" hâlâ "${PLACEHOLDER_VALUE}" — "php artisan cloud-render:register-render-node" çıktısındaki gerçek değerle değiştirin.`,
+          `[config] "${field}" is still "${PLACEHOLDER_VALUE}" — replace it with the real value from the output of "php artisan cloud-render:register-render-node".`,
         );
       }
     }
@@ -45,7 +45,7 @@ export class ConfigLoader {
       return readFileSync(this.configPath, 'utf-8');
     } catch (error) {
       throw new ConfigLoadError(
-        `Config dosyası okunamadı: ${this.configPath} (${(error as Error).message})`,
+        `Could not read config file: ${this.configPath} (${(error as Error).message})`,
       );
     }
   }
@@ -55,14 +55,14 @@ export class ConfigLoader {
       return JSON.parse(raw);
     } catch (error) {
       throw new ConfigLoadError(
-        `Config dosyası geçerli bir JSON değil: ${this.configPath} (${(error as Error).message})`,
+        `Config file is not valid JSON: ${this.configPath} (${(error as Error).message})`,
       );
     }
   }
 
   private assertValid(value: unknown): asserts value is RenderNodeConfig {
     if (typeof value !== 'object' || value === null) {
-      throw new ConfigLoadError('Config dosyasının kökü bir JSON nesnesi olmalı.');
+      throw new ConfigLoadError('The root of the config file must be a JSON object.');
     }
 
     const config = value as Record<string, unknown>;
@@ -80,7 +80,7 @@ export class ConfigLoader {
 
     for (const field of stringFields) {
       if (typeof config[field] !== 'string' || config[field] === '') {
-        errors.push(`"${field}" alanı boş olmayan bir string olmalı.`);
+        errors.push(`"${field}" field must be a non-empty string.`);
       }
     }
 
@@ -90,7 +90,7 @@ export class ConfigLoader {
         Number.isNaN(config[field]) ||
         (config[field] as number) <= 0
       ) {
-        errors.push(`"${field}" alanı pozitif bir sayı olmalı.`);
+        errors.push(`"${field}" field must be a positive number.`);
       }
     }
 
@@ -100,33 +100,33 @@ export class ConfigLoader {
       supportedEngines.length === 0 ||
       !supportedEngines.every((engine) => typeof engine === 'string' && engine !== '')
     ) {
-      errors.push('"supportedEngines" alanı en az bir string içeren bir dizi olmalı.');
+      errors.push('"supportedEngines" field must be an array containing at least one string.');
     }
 
     const pushServer = config.pushServer as Record<string, unknown> | undefined;
     if (typeof pushServer !== 'object' || pushServer === null) {
-      errors.push('"pushServer" alanı bir nesne olmalı ({ port, tunnelToken }).');
+      errors.push('"pushServer" field must be an object ({ port, tunnelToken }).');
     } else {
       if (
         typeof pushServer.port !== 'number' ||
         Number.isNaN(pushServer.port) ||
         pushServer.port <= 0
       ) {
-        errors.push('"pushServer.port" alanı pozitif bir sayı olmalı.');
+        errors.push('"pushServer.port" field must be a positive number.');
       }
       if (typeof pushServer.tunnelToken !== 'string' || pushServer.tunnelToken === '') {
-        errors.push('"pushServer.tunnelToken" alanı boş olmayan bir string olmalı.');
+        errors.push('"pushServer.tunnelToken" field must be a non-empty string.');
       }
     }
 
     const autoUpdate = config.autoUpdate;
     if (autoUpdate !== undefined) {
       if (typeof autoUpdate !== 'object' || autoUpdate === null) {
-        errors.push('"autoUpdate" alanı tanımlıysa bir nesne olmalı ({ enabled, checkIntervalMinutes?, branch? }).');
+        errors.push('"autoUpdate" field, if present, must be an object ({ enabled, checkIntervalMinutes?, branch? }).');
       } else {
         const au = autoUpdate as Record<string, unknown>;
         if (typeof au.enabled !== 'boolean') {
-          errors.push('"autoUpdate.enabled" alanı bir boolean olmalı.');
+          errors.push('"autoUpdate.enabled" field must be a boolean.');
         }
         if (
           au.checkIntervalMinutes !== undefined &&
@@ -134,16 +134,16 @@ export class ConfigLoader {
             Number.isNaN(au.checkIntervalMinutes) ||
             au.checkIntervalMinutes <= 0)
         ) {
-          errors.push('"autoUpdate.checkIntervalMinutes" alanı tanımlıysa pozitif bir sayı olmalı.');
+          errors.push('"autoUpdate.checkIntervalMinutes" field, if present, must be a positive number.');
         }
         if (au.branch !== undefined && (typeof au.branch !== 'string' || au.branch === '')) {
-          errors.push('"autoUpdate.branch" alanı tanımlıysa boş olmayan bir string olmalı.');
+          errors.push('"autoUpdate.branch" field, if present, must be a non-empty string.');
         }
       }
     }
 
     if (errors.length > 0) {
-      throw new ConfigLoadError(`Config dosyası geçersiz:\n- ${errors.join('\n- ')}`);
+      throw new ConfigLoadError(`Config file is invalid:\n- ${errors.join('\n- ')}`);
     }
   }
 }

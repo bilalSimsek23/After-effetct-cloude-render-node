@@ -51,7 +51,7 @@ export class TemplateDownloadService implements ITemplateDownloadService {
 
     if (expectedHash && expectedHash !== assetHash) {
       throw new TemplateDownloadError(
-        `Proje dosyasının SHA-256 checksum'ı Laravel'in bildirdiğiyle eşleşmiyor (beklenen: ${expectedHash}, hesaplanan: ${assetHash}) - dosya bozuk veya eksik indirilmiş olabilir.`,
+        `The project file's SHA-256 checksum does not match the one reported by Laravel (expected: ${expectedHash}, computed: ${assetHash}) - the file may be corrupt or incompletely downloaded.`,
       );
     }
 
@@ -66,7 +66,7 @@ export class TemplateDownloadService implements ITemplateDownloadService {
       await this.cacheService.set(templateUuid, assetHash);
     }
 
-    this.logger.info('Template asset job workspace içine hazırlandı', {
+    this.logger.info('Template asset staged into job workspace', {
       templateUuid,
       projectFilePath,
       assetHash,

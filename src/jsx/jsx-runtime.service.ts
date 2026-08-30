@@ -10,7 +10,7 @@ const SCRIPTS_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 
 export class JsxScriptNotFoundError extends Error {
   constructor(scriptName: string, scriptPath: string) {
-    super(`JSX script bulunamadı: "${scriptName}" (${scriptPath})`);
+    super(`JSX script not found: "${scriptName}" (${scriptPath})`);
     this.name = 'JsxScriptNotFoundError';
   }
 }
@@ -62,9 +62,9 @@ export class JsxRuntimeService implements IJsxRuntimeService {
     // here so every script run through this service is covered.
     const wrapperCode = `var payload = ${JSON.stringify(payload)};\napp.beginSuppressDialogs();\ntry {\n#include "${scriptPath}"\n} finally {\n  app.endSuppressDialogs(false);\n}`;
 
-    this.logger.debug('JSX script çalıştırılıyor', { scriptName, scriptPath, payload });
+    this.logger.debug('Running JSX script', { scriptName, scriptPath, payload });
     const result = await this.bridge.runJsxCode(appId, wrapperCode);
-    this.logger.debug('JSX script tamamlandı', { scriptName, result });
+    this.logger.debug('JSX script completed', { scriptName, result });
 
     return result;
   }

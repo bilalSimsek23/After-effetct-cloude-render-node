@@ -47,13 +47,13 @@ export class RenderProfileValidator extends BaseContractValidator<RenderProfileC
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (!Object.values(RenderProfileCode).includes(record.code as RenderProfileCode)) {
-      issues.push(`code geçerli bir RenderProfileCode olmalı, "${String(record.code)}" geçersiz`);
+      issues.push(`code must be a valid RenderProfileCode; "${String(record.code)}" is invalid`);
     }
     if (typeof record.name !== 'string' || record.name === '')
-      issues.push('name boş olmayan string olmalı');
+      issues.push('name must be a non-empty string');
     if (typeof record.watermarkEnabled !== 'boolean')
-      issues.push('watermarkEnabled boolean olmalı');
-    if (typeof record.isActive !== 'boolean') issues.push('isActive boolean olmalı');
+      issues.push('watermarkEnabled must be a boolean');
+    if (typeof record.isActive !== 'boolean') issues.push('isActive must be a boolean');
     return issues;
   }
 }

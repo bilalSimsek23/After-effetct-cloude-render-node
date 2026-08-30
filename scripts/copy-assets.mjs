@@ -36,9 +36,9 @@ function copyAssets(dir) {
 }
 
 if (!statSync(srcDir, { throwIfNoEntry: false })) {
-  console.error(`[copy-assets] src bulunamadı: ${srcDir}`);
+  console.error(`[copy-assets] src not found: ${srcDir}`);
   process.exit(1);
 }
 
 const count = copyAssets(srcDir);
-console.log(`[copy-assets] ${count} dosya dist/'e kopyalandı (${[...ASSET_EXTENSIONS].join(', ')})`);
+console.log(`[copy-assets] copied ${count} file(s) to dist/ (${[...ASSET_EXTENSIONS].join(', ')})`);

@@ -36,12 +36,12 @@ export class TemplateVariableValidator extends BaseContractValidator<TemplateVar
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (typeof record.key !== 'string' || record.key === '')
-      issues.push('key boş olmayan string olmalı');
+      issues.push('key must be a non-empty string');
     if (typeof record.label !== 'string' || record.label === '')
-      issues.push('label boş olmayan string olmalı');
+      issues.push('label must be a non-empty string');
     if (typeof record.type !== 'string' || record.type === '')
-      issues.push('type boş olmayan string olmalı');
-    if (typeof record.sortOrder !== 'number') issues.push('sortOrder sayısal olmalı');
+      issues.push('type must be a non-empty string');
+    if (typeof record.sortOrder !== 'number') issues.push('sortOrder must be a number');
     return issues;
   }
 }

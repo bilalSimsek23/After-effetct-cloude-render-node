@@ -33,15 +33,15 @@ export class JobLeaseValidator extends BaseContractValidator<JobLeaseContract> {
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (typeof record.leaseId !== 'string' || record.leaseId === '')
-      issues.push('leaseId boş olmayan string olmalı');
+      issues.push('leaseId must be a non-empty string');
     if (typeof record.leaseExpireAt !== 'string' || record.leaseExpireAt === '') {
-      issues.push('leaseExpireAt boş olmayan string olmalı');
+      issues.push('leaseExpireAt must be a non-empty string');
     }
     if (typeof record.renewIntervalSeconds !== 'number' || record.renewIntervalSeconds <= 0) {
-      issues.push('renewIntervalSeconds pozitif sayı olmalı');
+      issues.push('renewIntervalSeconds must be a positive number');
     }
     if (typeof record.retryCount !== 'number' || record.retryCount < 0) {
-      issues.push('retryCount negatif olmayan sayı olmalı');
+      issues.push('retryCount must be a non-negative number');
     }
     return issues;
   }

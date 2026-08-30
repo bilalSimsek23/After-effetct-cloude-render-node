@@ -62,7 +62,7 @@ export class VariableResolver implements IVariableResolver {
 
     await writeFile(resolvedOutputPath, JSON.stringify(entries, null, 2), 'utf-8');
 
-    this.logger.debug('Değişkenler çözümlendi', {
+    this.logger.debug('Variables resolved', {
       count: entries.length,
       resolvedOutputPath,
     });
@@ -109,14 +109,14 @@ export class VariableResolver implements IVariableResolver {
     if (!compositionName) {
       throw new PropertyAddressResolutionError(
         key,
-        'metadata.compositionName eksik veya string değil',
+        'metadata.compositionName is missing or not a string',
       );
     }
 
     const layerName =
       metadata && typeof metadata.layerName === 'string' ? metadata.layerName : null;
     if (!layerName) {
-      throw new PropertyAddressResolutionError(key, 'metadata.layerName eksik veya string değil');
+      throw new PropertyAddressResolutionError(key, 'metadata.layerName is missing or not a string');
     }
 
     const isMediaType =
@@ -129,7 +129,7 @@ export class VariableResolver implements IVariableResolver {
     if (!isMediaType && propertyPath.length === 0) {
       throw new PropertyAddressResolutionError(
         key,
-        'metadata.propertyPath eksik veya boş (medya olmayan tipler için zorunlu)',
+        'metadata.propertyPath is missing or empty (required for non-media types)',
       );
     }
 

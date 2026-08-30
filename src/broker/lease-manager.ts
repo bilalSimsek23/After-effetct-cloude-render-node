@@ -7,7 +7,7 @@ import type { Logger } from '../types/log.types.js';
 
 export class LeaseNotFoundError extends Error {
   constructor(leaseId: string) {
-    super(`Bilinmeyen leaseId: ${leaseId}`);
+    super(`Unknown leaseId: ${leaseId}`);
     this.name = 'LeaseNotFoundError';
   }
 }
@@ -53,7 +53,7 @@ export class LeaseManager implements ILeaseManager {
     this.leasesById.set(leaseId, { jobUuid, lease });
     this.leaseIdByJob.set(jobUuid, leaseId);
 
-    this.logger.info('Lease oluşturuldu', {
+    this.logger.info('Lease created', {
       jobUuid,
       leaseId,
       leaseExpireAt: lease.leaseExpireAt,
@@ -72,7 +72,7 @@ export class LeaseManager implements ILeaseManager {
     );
 
     entry.lease = renewed;
-    this.logger.debug('Lease yenilendi', { leaseId, leaseExpireAt: renewed.leaseExpireAt });
+    this.logger.debug('Lease renewed', { leaseId, leaseExpireAt: renewed.leaseExpireAt });
 
     return renewed;
   }
@@ -81,12 +81,12 @@ export class LeaseManager implements ILeaseManager {
     const entry = this.require(leaseId);
     this.leasesById.delete(leaseId);
     this.leaseIdByJob.delete(entry.jobUuid);
-    this.logger.debug('Lease serbest bırakıldı', { leaseId, jobUuid: entry.jobUuid });
+    this.logger.debug('Lease released', { leaseId, jobUuid: entry.jobUuid });
   }
 
   expireLease(leaseId: string): void {
     const entry = this.require(leaseId);
-    this.logger.info('Lease süresi doldu', { leaseId, jobUuid: entry.jobUuid });
+    this.logger.info('Lease expired', { leaseId, jobUuid: entry.jobUuid });
     this.releaseLease(leaseId);
   }
 
@@ -96,7 +96,7 @@ export class LeaseManager implements ILeaseManager {
     if (!entry) {
       return;
     }
-    this.logger.warn('Lease zorla serbest bırakıldı', { leaseId, jobUuid: entry.jobUuid });
+    this.logger.warn('Lease force-released', { leaseId, jobUuid: entry.jobUuid });
     this.releaseLease(leaseId);
   }
 

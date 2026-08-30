@@ -102,20 +102,20 @@ export class CapabilityReportValidator extends BaseContractValidator<CapabilityR
     const issues: string[] = [];
     for (const field of ['nodeUuid', 'nodeName', 'hostname', 'operatingSystem', 'architecture']) {
       if (typeof record[field] !== 'string' || record[field] === '') {
-        issues.push(`${field} boş olmayan string olmalı`);
+        issues.push(`${field} must be a non-empty string`);
       }
     }
     if (typeof record.adobe !== 'object' || record.adobe === null)
-      issues.push('adobe bir nesne olmalı');
-    if (!Array.isArray(record.supportedEngines)) issues.push('supportedEngines dizi olmalı');
+      issues.push('adobe must be an object');
+    if (!Array.isArray(record.supportedEngines)) issues.push('supportedEngines must be an array');
     if (!Array.isArray(record.supportedRenderProfiles))
-      issues.push('supportedRenderProfiles dizi olmalı');
-    if (!Array.isArray(record.installedPlugins)) issues.push('installedPlugins dizi olmalı');
-    if (!Array.isArray(record.supportedFormats)) issues.push('supportedFormats dizi olmalı');
+      issues.push('supportedRenderProfiles must be an array');
+    if (!Array.isArray(record.installedPlugins)) issues.push('installedPlugins must be an array');
+    if (!Array.isArray(record.supportedFormats)) issues.push('supportedFormats must be an array');
     if (typeof record.hardware !== 'object' || record.hardware === null)
-      issues.push('hardware bir nesne olmalı');
+      issues.push('hardware must be an object');
     if (typeof record.performance !== 'object' || record.performance === null) {
-      issues.push('performance bir nesne olmalı');
+      issues.push('performance must be an object');
     }
     return issues;
   }

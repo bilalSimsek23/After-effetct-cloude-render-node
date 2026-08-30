@@ -21,7 +21,7 @@ export class WaitRenderStage implements IExecutionStage {
       throw new ExecutionStageError(
         this.name,
         ErrorCode.RENDER_OUTPUT_PATH_MISSING,
-        'state.outputFilePath boş — beklenecek bir render çıktısı yolu yok.',
+        'state.outputFilePath is empty — there is no render output path to wait for.',
         { jobUuid: context.job.jobUuid },
       );
     }
@@ -30,12 +30,12 @@ export class WaitRenderStage implements IExecutionStage {
       throw new ExecutionStageError(
         this.name,
         ErrorCode.RENDER_QUEUE_ITEM_INDEX_MISSING,
-        'state.renderQueueItemIndex boş — izlenecek bir render queue öğesi yok.',
+        'state.renderQueueItemIndex is empty — there is no render queue item to watch.',
         { jobUuid: context.job.jobUuid },
       );
     }
 
-    context.logger.info('Render tamamlanması bekleniyor', {
+    context.logger.info('Waiting for render to complete', {
       jobUuid: context.job.jobUuid,
       queueItemId: context.state.renderQueueItemId,
       renderQueueItemIndex,

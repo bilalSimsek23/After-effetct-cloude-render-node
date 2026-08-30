@@ -24,7 +24,7 @@ export class JobScheduler implements IJobScheduler {
 
   submit(jobUuid: string, requirement: SchedulingRequirement): JobClaimContract {
     this.jobStateMachine.register(jobUuid);
-    this.logger.info('Job kuyruğa alındı', { jobUuid, templateUuid: requirement.templateUuid });
+    this.logger.info('Job queued', { jobUuid, templateUuid: requirement.templateUuid });
 
     return this.renderBrokerService.scheduleJob(jobUuid, requirement);
   }

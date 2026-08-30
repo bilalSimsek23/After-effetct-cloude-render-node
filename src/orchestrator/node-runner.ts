@@ -64,7 +64,7 @@ export class NodeRunner {
         this.jobProcessor.getActiveJobUuids(),
       );
     } catch (error) {
-      this.logger.error('Başlangıçta eski Job Workspace temizliği başarısız oldu', {
+      this.logger.error('Startup cleanup of stale job workspaces failed', {
         event: 'render_workspace_cleanup_failed',
         error: (error as Error).message,
       });
@@ -80,7 +80,7 @@ export class NodeRunner {
     await this.pushServer.start();
     this.scheduleHealthCheck();
 
-    this.logger.info('Render Node çalışıyor (Production Orchestrator)');
+    this.logger.info('Render Node running (Production Orchestrator)');
   }
 
   async shutdown(signal: string): Promise<void> {
@@ -89,7 +89,7 @@ export class NodeRunner {
     }
     this.shuttingDown = true;
 
-    this.logger.info(`Kapatma sinyali alındı (${signal}), servisler sırayla durduruluyor`);
+    this.logger.info(`Shutdown signal received (${signal}), stopping services in order`);
 
     if (this.healthCheckTimer) {
       clearTimeout(this.healthCheckTimer);
@@ -108,7 +108,7 @@ export class NodeRunner {
     // notifyNodeOffline()
     await this.notifyOffline();
 
-    this.logger.info('Render Node kapatıldı');
+    this.logger.info('Render Node shut down');
   }
 
   private scheduleHealthCheck(): void {
@@ -132,13 +132,13 @@ export class NodeRunner {
                 .filter(([, ok]) => !ok)
                 .map(([check]) => check),
         });
-        this.logger.info("Sağlık durumu değişti, Laravel'e bildirildi", {
+        this.logger.info("Health status changed, reported to Laravel", {
           healthy: result.healthy,
           checks: result.checks,
         });
       }
     } catch (error) {
-      this.logger.error('Health check çalıştırılamadı', { error: (error as Error).message });
+      this.logger.error('Health check could not run', { error: (error as Error).message });
     } finally {
       if (!this.shuttingDown) {
         this.scheduleHealthCheck();
@@ -163,7 +163,7 @@ export class NodeRunner {
         errors: [],
       });
     } catch (error) {
-      this.logger.error('Node OFFLINE bildirimi başarısız oldu', {
+      this.logger.error('Node OFFLINE notification failed', {
         error: (error as Error).message,
       });
     }

@@ -28,7 +28,7 @@ export class AppleScriptRunner {
       );
       return { stdout: stdout.trim() };
     } catch (error) {
-      this.logger.debug('AppleScript çalıştırma hatası', { error: (error as Error).message });
+      this.logger.debug('AppleScript execution error', { error: (error as Error).message });
       throw error;
     }
   }
@@ -46,7 +46,7 @@ export class AppleScriptRunner {
       );
       return { stdout: stdout.trim() };
     } catch (error) {
-      this.logger.debug('AppleScript dosyası çalıştırma hatası', {
+      this.logger.debug('AppleScript file execution error', {
         scriptPath,
         error: (error as Error).message,
       });

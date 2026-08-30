@@ -32,7 +32,7 @@ export class HeartbeatWatcher implements IHeartbeatWatcher {
     this.lastSeenAt.set(nodeUuid, atMs);
 
     if (this.reportedOffline.delete(nodeUuid)) {
-      this.logger.info('Node tekrar çevrimiçi', { nodeUuid });
+      this.logger.info('Node back online', { nodeUuid });
     }
   }
 
@@ -52,7 +52,7 @@ export class HeartbeatWatcher implements IHeartbeatWatcher {
       if (offline && !this.reportedOffline.has(nodeUuid)) {
         this.reportedOffline.add(nodeUuid);
         newlyOffline.push(nodeUuid);
-        this.logger.warn('Node çevrimdışı', { nodeUuid, lastSeenAgoMs: nowMs - lastSeen });
+        this.logger.warn('Node offline', { nodeUuid, lastSeenAgoMs: nowMs - lastSeen });
       }
     }
 

@@ -42,9 +42,9 @@ export class DeadJobRecoveryService implements IDeadJobRecoveryService {
         this.jobStateMachine.transition(jobUuid, JobState.EXPIRED);
         this.jobStateMachine.transition(jobUuid, JobState.QUEUED);
         recovered.push(jobUuid);
-        this.logger.warn('Dead Job Recovery: job tekrar kuyruğa alındı', { jobUuid, nodeUuid });
+        this.logger.warn('Dead Job Recovery: job re-queued', { jobUuid, nodeUuid });
       } catch (error) {
-        this.logger.error('Dead Job Recovery başarısız (geçersiz state geçişi)', {
+        this.logger.error('Dead Job Recovery failed (invalid state transition)', {
           jobUuid,
           nodeUuid,
           error: (error as Error).message,

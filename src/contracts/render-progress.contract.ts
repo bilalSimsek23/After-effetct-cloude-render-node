@@ -48,14 +48,14 @@ export class RenderProgressValidator extends BaseContractValidator<RenderProgres
     const issues: string[] = [];
     if (!Object.values(RenderProgressStatus).includes(record.status as RenderProgressStatus)) {
       issues.push(
-        `status geçerli bir RenderProgressStatus olmalı, "${String(record.status)}" geçersiz`,
+        `status must be a valid RenderProgressStatus; "${String(record.status)}" is invalid`,
       );
     }
     if (typeof record.percentage !== 'number' || record.percentage < 0 || record.percentage > 100) {
-      issues.push('percentage 0-100 arası sayı olmalı');
+      issues.push('percentage must be a number between 0 and 100');
     }
     if (typeof record.currentStep !== 'string' || record.currentStep === '') {
-      issues.push('currentStep boş olmayan string olmalı');
+      issues.push('currentStep must be a non-empty string');
     }
     return issues;
   }

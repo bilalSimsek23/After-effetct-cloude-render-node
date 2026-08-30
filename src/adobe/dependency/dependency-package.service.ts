@@ -61,7 +61,7 @@ export class DependencyPackageService implements IDependencyPackageService {
     const usedCache = cachedVersion === packageVersion;
 
     if (usedCache) {
-      this.logger.info('Dependency package cache hit, extract atlanıyor', {
+      this.logger.info('Dependency package cache hit, skipping extract', {
         renderTemplateUuid,
         packageVersion,
       });

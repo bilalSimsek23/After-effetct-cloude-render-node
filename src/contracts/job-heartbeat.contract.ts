@@ -45,15 +45,15 @@ export class JobHeartbeatValidator extends BaseContractValidator<JobHeartbeatCon
   protected validatePayload(record: Record<string, unknown>): string[] {
     const issues: string[] = [];
     if (typeof record.nodeUuid !== 'string' || record.nodeUuid === '')
-      issues.push('nodeUuid boş olmayan string olmalı');
+      issues.push('nodeUuid must be a non-empty string');
     if (typeof record.uptimeSeconds !== 'number' || record.uptimeSeconds < 0) {
-      issues.push('uptimeSeconds negatif olmayan sayı olmalı');
+      issues.push('uptimeSeconds must be a non-negative number');
     }
     if (typeof record.memory !== 'object' || record.memory === null)
-      issues.push('memory bir nesne olmalı');
-    if (typeof record.runningJobs !== 'number') issues.push('runningJobs sayısal olmalı');
+      issues.push('memory must be an object');
+    if (typeof record.runningJobs !== 'number') issues.push('runningJobs must be a number');
     if (typeof record.maxConcurrentJobs !== 'number')
-      issues.push('maxConcurrentJobs sayısal olmalı');
+      issues.push('maxConcurrentJobs must be a number');
     return issues;
   }
 }

@@ -30,13 +30,13 @@ export class AdobeEnvironmentService {
   ) {}
 
   async check(): Promise<EnvironmentCheckResult> {
-    this.logger.info('Environment Check başladı');
+    this.logger.info('Environment Check started');
 
     const errors: string[] = [];
 
     const afterEffects = await this.inspectApp(this.afterEffectsEngine, 'Adobe After Effects');
     if (!afterEffects.installed) {
-      errors.push('Adobe After Effects bulunamadı');
+      errors.push('Adobe After Effects not found');
     }
 
     // Reported for Contract consumers, never gates readiness — see class
@@ -54,7 +54,7 @@ export class AdobeEnvironmentService {
       await this.workspaceService.ensure();
     } catch (error) {
       workspaceReady = false;
-      errors.push(`Workspace oluşturulamadı: ${(error as Error).message}`);
+      errors.push(`Workspace could not be created: ${(error as Error).message}`);
     }
 
     const status = errors.length === 0 ? SystemReadyStatus.READY : SystemReadyStatus.NOT_READY;
@@ -70,13 +70,13 @@ export class AdobeEnvironmentService {
     };
 
     if (status === SystemReadyStatus.READY) {
-      this.logger.info('Environment Check başarılı', {
+      this.logger.info('Environment Check succeeded', {
         afterEffectsVersion: afterEffects.version,
         mediaEncoderVersion: mediaEncoder.version,
         dynamicLinkAvailable,
       });
     } else {
-      this.logger.error('Environment Check başarısız', { errors });
+      this.logger.error('Environment Check failed', { errors });
     }
 
     return result;
@@ -90,7 +90,7 @@ export class AdobeEnvironmentService {
     const version = installed ? await engine.getVersion() : null;
 
     if (installed) {
-      this.logger.info(`${label} bulundu`, { version });
+      this.logger.info(`${label} found`, { version });
     }
 
     return { installed, version };

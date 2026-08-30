@@ -58,7 +58,7 @@ export class WorkspaceValidator extends BaseContractValidator<WorkspaceContract>
 
     for (const field of baseFields) {
       if (typeof record[field] !== 'string' || record[field] === '') {
-        issues.push(`${field} boş olmayan string olmalı`);
+        issues.push(`${field} must be a non-empty string`);
       }
     }
 
@@ -70,13 +70,13 @@ export class WorkspaceValidator extends BaseContractValidator<WorkspaceContract>
     if (isV1_1OrLater) {
       for (const field of ['dependency', 'extracted', 'manifest', 'variables']) {
         if (typeof record[field] !== 'string' || record[field] === '') {
-          issues.push(`${field} boş olmayan string olmalı (v1.1.0+ zorunlu alan)`);
+          issues.push(`${field} must be a non-empty string (required field in v1.1.0+)`);
         }
       }
     }
 
     if (isV1_2OrLater && (typeof record.assets !== 'string' || record.assets === '')) {
-      issues.push('assets boş olmayan string olmalı (v1.2.0+ zorunlu alan)');
+      issues.push('assets must be a non-empty string (required field in v1.2.0+)');
     }
 
     return issues;

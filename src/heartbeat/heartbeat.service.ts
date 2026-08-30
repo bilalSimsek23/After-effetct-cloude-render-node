@@ -65,13 +65,13 @@ export class HeartbeatService {
         label: 'Heartbeat',
       });
 
-      this.logger.info('Heartbeat gönderildi', {
+      this.logger.info('Heartbeat sent', {
         uptimeSeconds: metrics.uptimeSeconds,
         runningJobs: metrics.runningJobs,
         memoryUsagePercent: metrics.memory.usagePercent,
       });
     } catch (error) {
-      this.logger.error('Heartbeat gönderilemedi', { error: (error as Error).message });
+      this.logger.error('Failed to send heartbeat', { error: (error as Error).message });
     } finally {
       this.scheduleNext();
     }

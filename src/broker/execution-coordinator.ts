@@ -25,18 +25,18 @@ export class ExecutionCoordinator implements IExecutionCoordinator {
 
   advance(jobUuid: string, toState: JobState): void {
     this.jobStateMachine.transition(jobUuid, toState);
-    this.logger.debug('Execution ilerledi', { jobUuid, toState });
+    this.logger.debug('Execution advanced', { jobUuid, toState });
   }
 
   completeJob(jobUuid: string, templateUuid: string): void {
     this.jobStateMachine.transition(jobUuid, JobState.COMPLETED);
     this.renderBrokerService.reportJobCompleted(jobUuid, templateUuid);
-    this.logger.info('Job tamamlandı', { jobUuid, templateUuid });
+    this.logger.info('Job completed', { jobUuid, templateUuid });
   }
 
   async failJob(jobUuid: string): Promise<void> {
     this.jobStateMachine.transition(jobUuid, JobState.FAILED);
     await this.renderBrokerService.reportJobFailed(jobUuid);
-    this.logger.warn('Job başarısız oldu', { jobUuid });
+    this.logger.warn('Job failed', { jobUuid });
   }
 }

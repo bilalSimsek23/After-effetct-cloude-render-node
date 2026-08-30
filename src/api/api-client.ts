@@ -173,7 +173,7 @@ export class ApiClient implements IApiClient {
     const nodeUuid = this.nodeIdentity.getNodeUuid();
 
     if (!nodeUuid) {
-      this.logger.warn('node_uuid henüz mevcut değil (register tamamlanmamış olabilir)');
+      this.logger.warn('node_uuid is not yet available (registration may not have completed)');
       return UNKNOWN_NODE_UUID;
     }
 

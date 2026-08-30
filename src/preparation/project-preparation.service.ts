@@ -35,7 +35,7 @@ function sanitizeAssetFileName(variableKey: string): string {
 export class NodeNotCapableError extends Error {
   constructor(engine: string, renderProfile: string) {
     super(
-      `Bu node "${engine}" motoru / "${renderProfile}" render profili gereksinimini karşılamıyor.`,
+      `This node does not meet the "${engine}" engine / "${renderProfile}" render profile requirement.`,
     );
     this.name = 'NodeNotCapableError';
   }
@@ -115,7 +115,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
       const jobWorkspace = await this.wrapStep(
         () => this.workspaceService.createJobWorkspace(renderJob.jobUuid),
         ErrorCode.EXECUTION_WORKSPACE_FAILED,
-        'Job workspace oluşturulamadı',
+        'Failed to create job workspace',
         renderJob.jobUuid,
       );
       workspace = mapJobWorkspaceToContract(jobWorkspace);
@@ -130,7 +130,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
             input.expectedProjectAssetHash,
           ),
         ErrorCode.PROJECT_DOWNLOAD_FAILED,
-        'Proje (template asset) indirme/hazırlama başarısız',
+        'Project (template asset) download/preparation failed',
         renderJob.jobUuid,
       );
 
@@ -147,7 +147,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
             jobWorkspace,
           ),
         ErrorCode.DEPENDENCY_DOWNLOAD_FAILED,
-        'Bağımlılık paketi indirme/kurulum başarısız',
+        'Dependency package download/installation failed',
         renderJob.jobUuid,
       );
 
@@ -158,7 +158,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
       if (dependencyReport.verification.status !== DependencyVerificationStatus.READY) {
         throw new RenderNodeError(
           ErrorCode.DEPENDENCY_VALIDATION_FAILED,
-          `Bağımlılık paketi doğrulaması başarısız: ${JSON.stringify(dependencyReport.verification)}`,
+          `Dependency package validation failed: ${JSON.stringify(dependencyReport.verification)}`,
           { jobUuid: renderJob.jobUuid, verification: dependencyReport.verification },
         );
       }
@@ -166,7 +166,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
       const extraction = await this.wrapStep(
         () => this.projectExtractor.extract(downloadResult.projectFilePath, jobWorkspace),
         ErrorCode.PROJECT_DOWNLOAD_FAILED,
-        'Proje arşivi açılamadı (extract)',
+        'Failed to open project archive (extract)',
         renderJob.jobUuid,
       );
 
@@ -193,7 +193,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
         mediaAssetLocalPaths,
       );
 
-      this.logger.info('Project Preparation Pipeline tamamlandı', {
+      this.logger.info('Project Preparation Pipeline completed', {
         jobUuid: renderJob.jobUuid,
         projectFilePath: extraction.projectFilePath,
         variablesFilePath: variableResult.variablesFilePath,
@@ -217,7 +217,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
           ? `[${error.code}] ${error.message}`
           : (error as Error).message;
 
-      this.logger.error('Project Preparation Pipeline başarısız', {
+      this.logger.error('Project Preparation Pipeline failed', {
         jobUuid: renderJob.jobUuid,
         error: message,
         errorCode: error instanceof RenderNodeError ? error.code : null,
@@ -267,7 +267,7 @@ export class ProjectPreparationService implements IProjectPreparationService {
       await this.wrapStep(
         () => this.laravelApiClient.downloadAsset(asset.downloadUrl, destinationPath),
         ErrorCode.VARIABLE_ASSET_DOWNLOAD_FAILED,
-        `Değişken varlığı indirilemedi: ${variable.key}`,
+        `Failed to download variable asset: ${variable.key}`,
         jobUuid,
       );
 

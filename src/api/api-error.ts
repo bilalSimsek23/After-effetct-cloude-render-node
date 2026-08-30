@@ -5,7 +5,7 @@ export class ApiError extends Error {
     public readonly path: string,
     public readonly responseBody: string,
   ) {
-    super(`Laravel API hatası: ${statusCode} ${path} — ${responseBody.slice(0, 500)}`);
+    super(`Laravel API error: ${statusCode} ${path} — ${responseBody.slice(0, 500)}`);
     this.name = 'ApiError';
   }
 }

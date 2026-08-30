@@ -23,7 +23,7 @@ export class FontCapabilityProvider implements ICapabilityProvider<string | null
       const raw = await readFile(this.dependencyCacheFilePath, 'utf-8');
       return createHash('sha256').update(raw).digest('hex').slice(0, 16);
     } catch (error) {
-      this.logger.debug('Font paket önbelleği bulunamadı, fontPackageVersion null döner', {
+      this.logger.debug('Font package cache not found, fontPackageVersion returns null', {
         error: (error as Error).message,
       });
       return null;

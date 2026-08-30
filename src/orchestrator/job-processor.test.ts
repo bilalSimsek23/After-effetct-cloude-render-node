@@ -184,7 +184,7 @@ describe('JobProcessor — guaranteed workspace cleanup', () => {
     // must not retroactively change or block that.
     expect(deps.resultForwarder.send).toHaveBeenCalled();
     expect(deps.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('temizliği başarısız'),
+      expect.stringContaining('cleanup failed'),
       expect.objectContaining({ event: 'render_workspace_cleanup_failed', jobUuid }),
     );
   });

@@ -90,11 +90,11 @@ export class CapabilityRegistry {
   async register(): Promise<CapabilityReportContract> {
     const report = await this.collect();
     this.lastReport = report;
-    this.deps.logger.info('Capability Report oluşturuldu', { nodeUuid: this.deps.nodeUuid });
+    this.deps.logger.info('Capability Report created', { nodeUuid: this.deps.nodeUuid });
 
     if (this.deps.runtimeCapabilityProvider) {
       this.runtimeCapabilities = await this.deps.runtimeCapabilityProvider.collect();
-      this.deps.logger.info('Adobe Runtime Capabilities tespit edildi', {
+      this.deps.logger.info('Adobe Runtime Capabilities detected', {
         nodeUuid: this.deps.nodeUuid,
         ...this.runtimeCapabilities,
       });
@@ -121,7 +121,7 @@ export class CapabilityRegistry {
     this.lastReport = report;
 
     if (comparison.changed) {
-      this.deps.logger.info('Capability Report güncellendi', {
+      this.deps.logger.info('Capability Report updated', {
         nodeUuid: this.deps.nodeUuid,
         changedFields: comparison.changedFields,
       });

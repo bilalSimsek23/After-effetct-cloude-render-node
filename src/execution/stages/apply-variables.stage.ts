@@ -22,7 +22,7 @@ export class ApplyVariablesStage implements IExecutionStage {
       throw new ExecutionStageError(
         this.name,
         ErrorCode.VARIABLE_FILE_PATH_MISSING,
-        'PreparedProject.variablesFilePath boş.',
+        'PreparedProject.variablesFilePath is empty.',
         { jobUuid: context.job.jobUuid },
       );
     }
@@ -31,7 +31,7 @@ export class ApplyVariablesStage implements IExecutionStage {
       context.afterEffectsEngine.applyVariables(variablesFilePath),
     );
 
-    context.logger.info('Değişkenler uygulandı', {
+    context.logger.info('Variables applied', {
       jobUuid: context.job.jobUuid,
       variablesFilePath,
     });

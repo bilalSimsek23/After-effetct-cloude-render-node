@@ -20,7 +20,7 @@ import type { NodeScore } from './node-scoring.service.js';
 
 export class UnknownNodeError extends Error {
   constructor(nodeUuid: string) {
-    super(`Bilinmeyen nodeUuid: ${nodeUuid}`);
+    super(`Unknown nodeUuid: ${nodeUuid}`);
     this.name = 'UnknownNodeError';
   }
 }
@@ -28,7 +28,7 @@ export class UnknownNodeError extends Error {
 export class NoCapableNodeError extends Error {
   constructor(jobUuid: string, requirement: SchedulingRequirement) {
     super(
-      `"${jobUuid}" için uygun node bulunamadı (engine=${requirement.engine}, renderProfile=${requirement.renderProfile}).`,
+      `No capable node found for "${jobUuid}" (engine=${requirement.engine}, renderProfile=${requirement.renderProfile}).`,
     );
     this.name = 'NoCapableNodeError';
   }
@@ -90,7 +90,7 @@ export class RenderBrokerService implements IRenderBrokerService {
       processedTemplateUuids: new Set(),
     });
     this.deps.heartbeatWatcher.recordHeartbeat(report.nodeUuid);
-    this.deps.logger.info("Node Broker'a kaydedildi", { nodeUuid: report.nodeUuid });
+    this.deps.logger.info('Node registered with Broker', { nodeUuid: report.nodeUuid });
   }
 
   /** Only for a REAL capability change (Adobe/font/plugin/profile/engine) — never called on every heartbeat (see spec's Capability Cache section). */
@@ -102,7 +102,7 @@ export class RenderBrokerService implements IRenderBrokerService {
       lastHeartbeatAt: existing?.lastHeartbeatAt ?? Date.now(),
       processedTemplateUuids: existing?.processedTemplateUuids ?? new Set(),
     });
-    this.deps.logger.info('Node capability güncellendi', { nodeUuid: report.nodeUuid });
+    this.deps.logger.info('Node capability updated', { nodeUuid: report.nodeUuid });
   }
 
   recordHeartbeat(nodeUuid: string, heartbeat: JobHeartbeatContract): void {
@@ -143,7 +143,7 @@ export class RenderBrokerService implements IRenderBrokerService {
 
     if (!requirement || previousRetryCount >= (this.deps.maxRetries ?? DEFAULT_MAX_RETRIES)) {
       this.deps.jobStateMachine.transition(jobUuid, JobState.CANCELLED);
-      this.deps.logger.error('Job için maksimum retry sayısına ulaşıldı', {
+      this.deps.logger.error('Maximum retry count reached for job', {
         jobUuid,
         retryCount: previousRetryCount,
       });
@@ -151,7 +151,7 @@ export class RenderBrokerService implements IRenderBrokerService {
     }
 
     this.deps.jobStateMachine.transition(jobUuid, JobState.RETRYING);
-    this.deps.logger.warn('Job retry ediliyor', { jobUuid, retryCount: previousRetryCount + 1 });
+    this.deps.logger.warn('Retrying job', { jobUuid, retryCount: previousRetryCount + 1 });
 
     return this.deps.retryPolicy.execute(RetryOperation.JOB_SCHEDULING, async () => {
       this.deps.jobStateMachine.transition(jobUuid, JobState.SCHEDULED);
@@ -164,7 +164,7 @@ export class RenderBrokerService implements IRenderBrokerService {
     this.deps.jobStateMachine.transition(jobUuid, JobState.CANCELLED);
     this.releaseJobLease(jobUuid);
     this.untrackJob(jobUuid);
-    this.deps.logger.info('Job iptal edildi', { jobUuid });
+    this.deps.logger.info('Job cancelled', { jobUuid });
   }
 
   isCancelled(jobUuid: string): boolean {
@@ -189,7 +189,7 @@ export class RenderBrokerService implements IRenderBrokerService {
         try {
           this.scheduleJob(jobUuid, requirement);
         } catch (error) {
-          this.deps.logger.error('Kurtarılan job yeniden zamanlanamadı', {
+          this.deps.logger.error('Failed to reschedule recovered job', {
             jobUuid,
             error: (error as Error).message,
           });
@@ -239,7 +239,7 @@ export class RenderBrokerService implements IRenderBrokerService {
 
     this.deps.jobStateMachine.transition(jobUuid, JobState.CLAIMED);
 
-    this.deps.logger.info('Job claim edildi', {
+    this.deps.logger.info('Job claimed', {
       jobUuid,
       nodeUuid: node.capability.nodeUuid,
       leaseId: lease.leaseId,
@@ -280,7 +280,7 @@ export class RenderBrokerService implements IRenderBrokerService {
   }
 
   private logScores(jobUuid: string, scores: NodeScore[]): void {
-    this.deps.logger.debug('Node seçim skorları', {
+    this.deps.logger.debug('Node selection scores', {
       jobUuid,
       strategy: this.deps.selectionStrategy.name,
       scores,

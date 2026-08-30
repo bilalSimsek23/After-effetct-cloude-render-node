@@ -3,14 +3,14 @@ import type { Logger } from '../types/log.types.js';
 
 export class InvalidJobStateTransitionError extends Error {
   constructor(jobUuid: string, from: JobState, to: JobState) {
-    super(`Geçersiz Job State geçişi: ${from} → ${to} (jobUuid=${jobUuid})`);
+    super(`Invalid Job State transition: ${from} → ${to} (jobUuid=${jobUuid})`);
     this.name = 'InvalidJobStateTransitionError';
   }
 }
 
 export class UnknownJobError extends Error {
   constructor(jobUuid: string) {
-    super(`Bilinmeyen jobUuid: ${jobUuid}`);
+    super(`Unknown jobUuid: ${jobUuid}`);
     this.name = 'UnknownJobError';
   }
 }
@@ -31,7 +31,7 @@ export class JobStateMachine {
   /** Registers a brand-new job at QUEUED — the only state a job may start its life in. */
   register(jobUuid: string): void {
     this.states.set(jobUuid, JobState.QUEUED);
-    this.logger.debug('Job State kaydedildi', { jobUuid, state: JobState.QUEUED });
+    this.logger.debug('Job State registered', { jobUuid, state: JobState.QUEUED });
   }
 
   getState(jobUuid: string): JobState {
@@ -51,7 +51,7 @@ export class JobStateMachine {
     }
 
     this.states.set(jobUuid, to);
-    this.logger.debug('Job State geçişi', { jobUuid, from, to });
+    this.logger.debug('Job State transition', { jobUuid, from, to });
 
     return to;
   }

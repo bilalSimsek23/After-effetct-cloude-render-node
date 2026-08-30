@@ -199,7 +199,7 @@
       clean += 'FF';
     }
     if (clean.length !== 8) {
-      throw new Error('INVALID_VALUE: COLOR hex formatı geçersiz: ' + hex);
+      throw new Error('INVALID_VALUE: COLOR hex format invalid: ' + hex);
     }
     return [
       parseInt(clean.substring(0, 2), 16) / 255,
@@ -219,7 +219,7 @@
 
   VariableHandlers.TEXT = function (prop, value) {
     if (typeof value !== 'string') {
-      throw new Error('INVALID_VALUE: TEXT bir string olmalı');
+      throw new Error('INVALID_VALUE: TEXT must be a string');
     }
     var textDocument = prop.value;
     if (textDocument.font && !isFontAvailable(textDocument.font)) {
@@ -232,7 +232,7 @@
   VariableHandlers.NUMBER = function (prop, value) {
     var num = Number(value);
     if (isNaN(num)) {
-      throw new Error('INVALID_VALUE: NUMBER sayıya çevrilemedi: ' + value);
+      throw new Error('INVALID_VALUE: NUMBER could not be converted to a number: ' + value);
     }
     prop.setValue(num);
   };
@@ -251,21 +251,21 @@
     } else if (value && value.length) {
       rgba = value;
     } else {
-      throw new Error('INVALID_VALUE: COLOR desteklenmeyen formatta');
+      throw new Error('INVALID_VALUE: COLOR in unsupported format');
     }
     prop.setValue(rgba);
   };
 
   VariableHandlers.POINT2D = function (prop, value) {
     if (!value || value.length !== 2) {
-      throw new Error('INVALID_VALUE: POINT2D [x,y] olmalı');
+      throw new Error('INVALID_VALUE: POINT2D must be [x,y]');
     }
     prop.setValue(value);
   };
 
   VariableHandlers.POINT3D = function (prop, value) {
     if (!value || value.length !== 3) {
-      throw new Error('INVALID_VALUE: POINT3D [x,y,z] olmalı');
+      throw new Error('INVALID_VALUE: POINT3D must be [x,y,z]');
     }
     prop.setValue(value);
   };

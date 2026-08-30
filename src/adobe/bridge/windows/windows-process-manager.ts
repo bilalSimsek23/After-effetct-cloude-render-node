@@ -48,7 +48,7 @@ export class WindowsProcessManager implements IUrlOpener {
     try {
       entries = await readdir(adobeDir, { withFileTypes: true });
     } catch (error) {
-      this.logger.warn('Adobe kurulum dizini okunamadı', {
+      this.logger.warn('Failed to read Adobe installation directory', {
         adobeDir,
         error: (error as Error).message,
       });
@@ -97,7 +97,7 @@ export class WindowsProcessManager implements IUrlOpener {
       const version = stdout.trim();
       return version.length > 0 ? version : null;
     } catch (error) {
-      this.logger.warn('Uygulama versiyonu okunamadı', {
+      this.logger.warn('Failed to read application version', {
         bundlePath,
         error: (error as Error).message,
       });

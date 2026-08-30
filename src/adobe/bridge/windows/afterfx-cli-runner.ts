@@ -61,7 +61,7 @@ export class AfterFxCliRunner {
       );
       return { stdout: stdout.trim() };
     } catch (error) {
-      this.logger.debug('AfterFX -r çalıştırma hatası', {
+      this.logger.debug('AfterFX -r execution error', {
         scriptPath,
         error: (error as Error).message,
       });
