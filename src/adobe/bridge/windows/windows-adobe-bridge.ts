@@ -8,6 +8,7 @@ import type { IAdobeBridge } from '../adobe-bridge.js';
 import { JsxExecutionError } from '../adobe-bridge.js';
 import { withJsxErrorBoundary, readJsxErrorFile } from '../jsx-error-boundary.js';
 import { withTimeout, TimeoutError } from '../../../utils/with-timeout.js';
+import { sleep } from '../../../utils/sleep.js';
 import type { Logger } from '../../../types/log.types.js';
 import type { AdobeAppId } from '../../models/adobe-app-id.js';
 import { ADOBE_APP_DESCRIPTORS } from '../../models/adobe-app.model.js';
@@ -63,6 +64,18 @@ const SCRIPTING_PERMISSION_PREF_KEY = 'Pref_SCRIPTING_FILE_NETWORK_SECURITY';
  * long (see DEFAULT_COMMAND_TIMEOUT_MS below).
  */
 const SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS = 60000;
+/**
+ * Empirically observed (2026-08-30): even once the preflight `-r` call
+ * itself completes cleanly (no timeout), the very next `-r` call fired
+ * immediately after it against the same instance can come back with an
+ * empty result and none of its expected side effects (e.g. a report file
+ * never gets written) — as if AE silently dropped it. AE's `-r` hand-off to
+ * an already-open instance appears to need a brief moment to settle before
+ * it's ready to accept the next command; this delay only ever runs once
+ * per process (ensureScriptingPermission itself is a once-per-process
+ * no-op after the first call), so it doesn't add latency to every job.
+ */
+const SCRIPTING_PERMISSION_SETTLE_DELAY_MS = 2000;
 const SCRIPTING_PERMISSION_HINT =
   'After Effects\' "Allow Scripts to Write Files and Access Network" permission appears to be off. ' +
   'Open After Effects, go to Edit > Preferences > Scripting & Expressions, check ' +
@@ -157,6 +170,8 @@ export class WindowsAdobeBridge implements IAdobeBridge {
         'Failed to set scripting permission automatically - After Effects may be waiting on a confirmation dialog',
         { error: (error as Error).message },
       );
+    } finally {
+      await sleep(SCRIPTING_PERMISSION_SETTLE_DELAY_MS);
     }
   }
 
