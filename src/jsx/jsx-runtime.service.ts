@@ -60,7 +60,17 @@ export class JsxRuntimeService implements IJsxRuntimeService {
     // click OK) instead of failing back to Node as a normal thrown error —
     // same fix as AfterEffectsEngine.suppressDialogs(), applied uniformly
     // here so every script run through this service is covered.
-    const wrapperCode = `var payload = ${JSON.stringify(payload)};\napp.beginSuppressDialogs();\ntry {\n#include "${scriptPath}"\n} finally {\n  app.endSuppressDialogs(false);\n}`;
+    //
+    // #include's path is forward-slashed, not backslash-escaped: real
+    // Windows testing (2026-08-30) found a raw Windows absolute path here
+    // (e.g. "...\render-node-v2\...") corrupts the #include directive -
+    // "\r" in the middle of a real path component is indistinguishable
+    // from the carriage-return escape sequence to ExtendScript's
+    // preprocessor, silently mangling the path into one that doesn't
+    // exist. Forward slashes sidestep the ambiguity entirely and resolve
+    // identically on Windows.
+    const includeSafePath = scriptPath.replace(/\\/g, '/');
+    const wrapperCode = `var payload = ${JSON.stringify(payload)};\napp.beginSuppressDialogs();\ntry {\n#include "${includeSafePath}"\n} finally {\n  app.endSuppressDialogs(false);\n}`;
 
     this.logger.debug('Running JSX script', { scriptName, scriptPath, payload });
     const result = await this.bridge.runJsxCode(appId, wrapperCode);
