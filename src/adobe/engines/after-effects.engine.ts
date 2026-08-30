@@ -12,7 +12,8 @@ import { sleep } from '../../utils/sleep.js';
 import { withTimeout } from '../../utils/with-timeout.js';
 
 const READY_POLL_INTERVAL_MS = 500;
-const DEFAULT_READY_TIMEOUT_MS = 30000;
+const DEFAULT_READY_TIMEOUT_MS = 60000;
+const READY_PROBE_TIMEOUT_MS = 8000;
 
 export interface IAfterEffectsEngine {
   initialize(): Promise<void>;
@@ -199,10 +200,27 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     return JSON.parse(raw) as VariableApplicationReport;
   }
 
+  /**
+   * `isRunning()` only confirms the OS process exists - real Windows
+   * testing (2026-08-30) found that's not the same as "ready to run a
+   * script": a freshly-launched AE can still be mid-startup (splash
+   * screen, MediaCore init) for several seconds after its process
+   * appears, and a `-r` call sent during that window can either time out
+   * or trigger AE's own "Unable to execute script..." dialog, both
+   * non-deterministically depending on exactly when it lands. A trivial,
+   * side-effect-free script call is the only reliable way found so far to
+   * confirm AE can actually process a script right now; timing out is
+   * treated as "not ready yet" and retried rather than a real failure.
+   */
   private async pollUntilReady(): Promise<void> {
     for (;;) {
       if (await this.isRunning()) {
-        return;
+        try {
+          await this.bridge.runJsxCode(AdobeAppId.AFTER_EFFECTS, '"ready";', READY_PROBE_TIMEOUT_MS);
+          return;
+        } catch {
+          // Not actually ready yet - fall through to the poll delay below.
+        }
       }
       await sleep(READY_POLL_INTERVAL_MS);
     }
