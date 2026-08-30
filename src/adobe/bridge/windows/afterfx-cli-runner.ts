@@ -55,7 +55,19 @@ export class AfterFxCliRunner {
   ): Promise<AfterFxCliResult> {
     try {
       const { stdout } = await withTimeout(
-        execFileAsync(afterFxExePath, ['-r', scriptPath]),
+        // `timeout`/`killSignal` matter as much as the outer withTimeout race
+        // here: without them, a slow/hung `-r` process (e.g. AE still on its
+        // splash screen during a cold launch) keeps running in the
+        // background even after Node gives up waiting on it, and can then
+        // collide with the *next* `-r` call this class issues against the
+        // same singleton AE instance (empirically observed 2026-08-30 — the
+        // orphaned process's own script only got a chance to run well after
+        // the timed-out call had already returned and a second, overlapping
+        // call had already failed against the still-launching instance).
+        execFileAsync(afterFxExePath, ['-r', scriptPath], {
+          timeout: timeoutMs,
+          killSignal: 'SIGTERM',
+        }),
         timeoutMs,
         'afterfx-r',
       );

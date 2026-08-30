@@ -48,7 +48,21 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 15000;
  */
 const SCRIPTING_PERMISSION_PREF_SECTION = 'Main Pref Section';
 const SCRIPTING_PERMISSION_PREF_KEY = 'Pref_SCRIPTING_FILE_NETWORK_SECURITY';
-const SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS = 5000;
+/**
+ * This preflight is very often the FIRST `-r` call issued against AE in a
+ * given process's lifetime, meaning it — not the "real" script call after
+ * it — is the one that pays AE's full cold-launch cost (splash screen,
+ * MediaCore init, plugin scan) if AE wasn't already running. An earlier,
+ * much shorter timeout here (5000ms) fired while AE was still on its splash
+ * screen (empirically observed 2026-08-30), which — combined with
+ * afterfx-cli-runner.ts not previously killing the abandoned process on
+ * timeout — let a second, overlapping `-r` call collide with the still-
+ * launching instance. 60s comfortably covers a real-world cold launch on
+ * typical consumer hardware; once this succeeds, every later call in the
+ * same process reuses the now-warm instance and needs nowhere near this
+ * long (see DEFAULT_COMMAND_TIMEOUT_MS below).
+ */
+const SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS = 60000;
 const SCRIPTING_PERMISSION_HINT =
   'After Effects\' "Allow Scripts to Write Files and Access Network" permission appears to be off. ' +
   'Open After Effects, go to Edit > Preferences > Scripting & Expressions, check ' +

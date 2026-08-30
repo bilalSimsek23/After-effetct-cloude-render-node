@@ -124,8 +124,13 @@ export class HardwareCapabilityProvider implements ICapabilityProvider<Capabilit
           '-NoProfile',
           '-NonInteractive',
           '-Command',
+          // -ExpandProperty only accepts a single property name — passing
+          // "FreeSpace,Size" to it throws CannotConvertArgument (empirically
+          // observed 2026-08-30). Plain Select-Object with multiple property
+          // names instead, which is exactly the { FreeSpace, Size } object
+          // shape already handled below.
           `Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='${driveLetter}:'" | ` +
-            'Select-Object -ExpandProperty FreeSpace,Size | ConvertTo-Json',
+            'Select-Object FreeSpace,Size | ConvertTo-Json',
         ]),
         SHELL_TIMEOUT_MS,
         'disk-powershell',
