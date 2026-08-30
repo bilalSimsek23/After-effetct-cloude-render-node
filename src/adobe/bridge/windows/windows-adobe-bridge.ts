@@ -89,21 +89,42 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     return this.processManager.readBundleVersion(exePath);
   }
 
+  /**
+   * Matches by full executable path, not just process/image name: a real
+   * test machine (2026-08-30) turned out to have BOTH "Adobe After Effects
+   * 2023" and "...2024" installed side by side, and both ship an
+   * identically-named AfterFX.exe. `tasklist`'s image-name filter can't
+   * tell them apart, so if the user had 2023 open while this bridge always
+   * resolves and targets 2024 (findInstalledApp() picks the newest
+   * installed year), an image-name-only check would report "already
+   * running" for the wrong version entirely - every `-r` call against the
+   * actually-not-running 2024 install would then race against a genuine,
+   * uncoordinated cold launch, matching the exact inconsistent timeouts
+   * and dialogs seen in testing.
+   */
   async isAppRunning(appId: AdobeAppId): Promise<boolean> {
     const exePath = await this.resolveExePath(appId);
     if (!exePath) {
       return false;
     }
 
-    const imageName = this.imageNameFor(exePath);
-
     try {
       const { stdout } = await withTimeout(
-        execFileAsync('tasklist', ['/FI', `IMAGENAME eq ${imageName}`, '/FO', 'CSV', '/NH']),
+        execFileAsync('powershell', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `Get-CimInstance Win32_Process -Filter "Name='${this.imageNameFor(exePath)}'" | ` +
+            'Select-Object -ExpandProperty ExecutablePath',
+        ]),
         DEFAULT_COMMAND_TIMEOUT_MS,
         'tasklist',
       );
-      return stdout.toLowerCase().includes(imageName.toLowerCase());
+      const runningPaths = stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      return runningPaths.some((path) => path.toLowerCase() === exePath.toLowerCase());
     } catch (error) {
       this.logger.debug('isAppRunning check failed', {
         appId,
