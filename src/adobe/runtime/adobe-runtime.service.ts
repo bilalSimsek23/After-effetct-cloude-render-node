@@ -126,6 +126,8 @@ export class AdobeRuntimeService {
       throw new Error(`An AdobeSession already exists for this job_uuid: ${jobUuid}`);
     }
 
+    await this.ensureAfterEffectsReady();
+
     const jobWorkspace = await this.workspaceService.createJobWorkspace(jobUuid);
     const session = new AdobeSession(
       jobUuid,
@@ -137,6 +139,29 @@ export class AdobeRuntimeService {
 
     this.activeSessions.set(jobUuid, session);
     return session;
+  }
+
+  /**
+   * initialize()'s own launch()+waitUntilReady() sequence only ever ran
+   * once, at node startup - real testing found AE can end up closed by the
+   * time an actual job arrives (a crash, a manual quit, an earlier job's
+   * cleanup) with nothing here ever noticing before diving straight into
+   * openProject() with a flat, un-retried timeout. Re-checking here, once
+   * per job, closes that gap the same way waitUntilReady()'s own probe
+   * already closes it for the very first cold launch: if AE is genuinely
+   * still the warm instance from before, isRunning() is true and
+   * waitUntilReady() (which does a real, side-effect-free script call, not
+   * just a process-exists check) resolves almost immediately, adding
+   * negligible per-job overhead.
+   */
+  private async ensureAfterEffectsReady(): Promise<void> {
+    if (!(await this.afterEffectsEngine.isRunning())) {
+      this.logger.warn('After Effects is not running at job start - relaunching');
+      this.launchedAfterEffects = true;
+      await this.afterEffectsEngine.launch();
+    }
+
+    await this.afterEffectsEngine.waitUntilReady();
   }
 
   async closeSession(jobUuid: string): Promise<void> {
