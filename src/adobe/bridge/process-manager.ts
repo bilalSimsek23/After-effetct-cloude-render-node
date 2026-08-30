@@ -15,6 +15,18 @@ export interface InstalledAppLookup {
 }
 
 /**
+ * The narrow slice of ProcessManager that CloudFontActivatorService actually
+ * needs, extracted so callers can depend on this instead of the concrete
+ * macOS-only class - WindowsProcessManager implements it too, letting both
+ * platforms share one CloudFontActivatorService with no code of its own
+ * changed (see create-adobe-bridge.ts, the one place that picks which
+ * concrete class backs this interface).
+ */
+export interface IUrlOpener {
+  openUrl(url: string): Promise<void>;
+}
+
+/**
  * OS-level application mechanics: discovering an installed app under
  * /Applications, reading its bundle version, and launching it. The only
  * class besides AppleScriptRunner that touches the filesystem or spawns
@@ -26,7 +38,7 @@ export interface InstalledAppLookup {
  * so discovery has to look one level inside the matched folder rather than
  * treating /Applications entries as bundles directly.
  */
-export class ProcessManager {
+export class ProcessManager implements IUrlOpener {
   constructor(private readonly logger: Logger) {}
 
   async findInstalledApp(folderNamePattern: RegExp): Promise<InstalledAppLookup | null> {

@@ -1,4 +1,4 @@
-import type { ProcessManager } from '../bridge/process-manager.js';
+import type { IUrlOpener } from '../bridge/process-manager.js';
 import type { Logger } from '../../types/log.types.js';
 import type { CloudFontActivationResult } from './dependency-package.types.js';
 
@@ -28,7 +28,7 @@ export interface ICloudFontActivatorService {
  */
 export class CloudFontActivatorService implements ICloudFontActivatorService {
   constructor(
-    private readonly processManager: ProcessManager,
+    private readonly processManager: IUrlOpener,
     private readonly logger: Logger,
   ) {}
 

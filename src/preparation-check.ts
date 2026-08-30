@@ -53,7 +53,7 @@ import { PluginReporterService } from './adobe/dependency/plugin-reporter.servic
 import { DependencyVerificationService } from './adobe/dependency/dependency-verification.service.js';
 import { DependencyCacheService } from './adobe/dependency/dependency-cache.service.js';
 import { CloudFontActivatorService } from './adobe/dependency/cloud-font-activator.service.js';
-import { ProcessManager } from './adobe/bridge/process-manager.js';
+import { createUrlOpener } from './adobe/bridge/create-adobe-bridge.js';
 import { DependencyPackageService } from './adobe/dependency/dependency-package.service.js';
 import { TemplateCacheService } from './preparation/template-cache.service.js';
 import { TemplateDownloadService } from './preparation/template-download.service.js';
@@ -189,7 +189,7 @@ async function run(): Promise<void> {
     new PluginReporterService(logger),
     new DependencyVerificationService(logger),
     new DependencyCacheService(dependencyCacheFilePath, logger),
-    new CloudFontActivatorService(new ProcessManager(logger), logger),
+    new CloudFontActivatorService(createUrlOpener(logger), logger),
     logger,
   );
 

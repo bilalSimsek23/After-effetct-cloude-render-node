@@ -37,9 +37,8 @@ import { HealthService } from './services/health.service.js';
 import { RetryPolicyService } from './services/retry-policy.service.js';
 import { AuthService } from './api/auth.service.js';
 import { LaravelApiClient } from './api/laravel-api.client.js';
-import { AppleScriptRunner } from './adobe/bridge/applescript-runner.js';
-import { ProcessManager } from './adobe/bridge/process-manager.js';
-import { AdobeBridge } from './adobe/bridge/adobe-bridge.js';
+import { createAdobeBridgeBundle } from './adobe/bridge/create-adobe-bridge.js';
+import type { IAdobeBridge } from './adobe/bridge/adobe-bridge.js';
 import { AdobeAppId } from './adobe/models/adobe-app-id.js';
 import { JsxRuntimeService } from './jsx/jsx-runtime.service.js';
 import { VariableResolver } from './jsx/variable-resolver.js';
@@ -166,7 +165,7 @@ function verifyNodeAuthHeaders(req: IncomingMessage, rawBody: string): boolean {
 
 /** Builds a real, valid .aep (via real After Effects) wrapped in the same nested archive shape execution-check.ts uses, plus a manifest.json — this is what the fake server's asset-download route serves. */
 async function buildFakeTemplatePackage(
-  bridge: AdobeBridge,
+  bridge: IAdobeBridge,
   workDir: string,
   manifest: ReturnType<typeof createManifestContract>,
 ): Promise<string> {
@@ -248,9 +247,7 @@ async function run(): Promise<void> {
   };
   nodeIdentity.setNodeUuid(config.nodeUuid);
 
-  const appleScriptRunner = new AppleScriptRunner(logger);
-  const processManager = new ProcessManager(logger);
-  const bridge = new AdobeBridge(appleScriptRunner, processManager, logger);
+  const { bridge, urlOpener } = createAdobeBridgeBundle(logger);
   const jsxRuntime = new JsxRuntimeService(bridge, logger);
   const afterEffectsEngine = new AfterEffectsEngine(
     bridge,
@@ -491,7 +488,7 @@ async function run(): Promise<void> {
     new PluginReporterService(logger),
     new DependencyVerificationService(logger),
     new DependencyCacheService(dependencyCacheFilePath, logger),
-    new CloudFontActivatorService(processManager, logger),
+    new CloudFontActivatorService(urlOpener, logger),
     logger,
   );
 

@@ -10,9 +10,7 @@ import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { FileLogger } from './logger/file-logger.js';
 import { NodeIdentityService } from './services/node-identity.service.js';
-import { AppleScriptRunner } from './adobe/bridge/applescript-runner.js';
-import { ProcessManager } from './adobe/bridge/process-manager.js';
-import { AdobeBridge } from './adobe/bridge/adobe-bridge.js';
+import { createAdobeBridgeBundle } from './adobe/bridge/create-adobe-bridge.js';
 import { AfterEffectsEngine } from './adobe/engines/after-effects.engine.js';
 import {
   AfterEffectsRenderEngine,
@@ -50,9 +48,7 @@ async function run(): Promise<void> {
   await mkdir(resolve(testCacheFilePath, '..'), { recursive: true });
   await writeFile(testCacheFilePath, JSON.stringify({ [randomUUID()]: 1 }), 'utf-8');
 
-  const appleScriptRunner = new AppleScriptRunner(logger);
-  const processManager = new ProcessManager(logger);
-  const bridge = new AdobeBridge(appleScriptRunner, processManager, logger);
+  const { bridge } = createAdobeBridgeBundle(logger);
   const jsxRuntime = new JsxRuntimeService(bridge, logger);
   const afterEffectsEngine = new AfterEffectsEngine(
     bridge,

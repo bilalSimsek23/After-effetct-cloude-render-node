@@ -17,9 +17,7 @@ import { FileLogger } from './logger/file-logger.js';
 import { NodeIdentityService } from './services/node-identity.service.js';
 import { ConfigLoader } from './config/config-loader.js';
 import { ApiClient } from './api/api-client.js';
-import { AppleScriptRunner } from './adobe/bridge/applescript-runner.js';
-import { ProcessManager } from './adobe/bridge/process-manager.js';
-import { AdobeBridge } from './adobe/bridge/adobe-bridge.js';
+import { createAdobeBridgeBundle } from './adobe/bridge/create-adobe-bridge.js';
 import { AfterEffectsEngine } from './adobe/engines/after-effects.engine.js';
 import { AfterEffectsRenderEngine } from './adobe/engines/after-effects-render.engine.js';
 import { JsxRuntimeService } from './jsx/jsx-runtime.service.js';
@@ -41,9 +39,7 @@ async function run(): Promise<void> {
 
   const apiClient = new ApiClient(config, logger, nodeIdentity);
 
-  const appleScriptRunner = new AppleScriptRunner(logger);
-  const processManager = new ProcessManager(logger);
-  const bridge = new AdobeBridge(appleScriptRunner, processManager, logger);
+  const { bridge } = createAdobeBridgeBundle(logger);
 
   const jsxRuntime = new JsxRuntimeService(bridge, logger);
   const afterEffectsEngine = new AfterEffectsEngine(

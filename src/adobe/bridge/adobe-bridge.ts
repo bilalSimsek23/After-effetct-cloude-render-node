@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readFile, rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import type { AppleScriptRunner } from './applescript-runner.js';
 import type { ProcessManager } from './process-manager.js';
 import type { Logger } from '../../types/log.types.js';
@@ -9,6 +9,7 @@ import type { AdobeAppId } from '../models/adobe-app-id.js';
 import { ADOBE_APP_DESCRIPTORS } from '../models/adobe-app.model.js';
 import { ErrorCode } from '../../errors/error-code.js';
 import { RenderNodeError } from '../../errors/render-node-error.js';
+import { withJsxErrorBoundary, readJsxErrorFile } from './jsx-error-boundary.js';
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 15000;
 
@@ -150,14 +151,21 @@ export class AdobeBridge implements IAdobeBridge {
     const errorFilePath = join(tmpdir(), `render-node-jsx-error-${randomUUID()}.txt`);
 
     try {
-      const guarded = this.withJsxErrorBoundary(jsxCode, errorFilePath);
+      // See JsxExecutionError's docblock. Deliberately a bare top-level
+      // try/catch, not a function-wrapped `(function(){ ... })()` - the
+      // code this wraps relies on DoScript's own "value of the last
+      // executed statement" convention for its normal (non-error) return
+      // value, which a function body would not preserve. Only the
+      // exception path is redirected to the error file - the success
+      // path's return value is completely unaffected by this wrapper.
+      const guarded = withJsxErrorBoundary(jsxCode, errorFilePath);
       const escaped = guarded.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const { stdout } = await this.appleScriptRunner.run(
         `tell application "${displayName}" to DoScript "${escaped}"`,
         timeoutMs,
       );
 
-      const caughtMessage = await this.readErrorFile(errorFilePath);
+      const caughtMessage = await readJsxErrorFile(errorFilePath);
       if (caughtMessage !== null) {
         throw new JsxExecutionError(caughtMessage, { appId });
       }
@@ -165,36 +173,6 @@ export class AdobeBridge implements IAdobeBridge {
       return stdout;
     } finally {
       await rm(errorFilePath, { force: true }).catch(() => {});
-    }
-  }
-
-  /**
-   * See JsxExecutionError's docblock. Deliberately a bare top-level
-   * try/catch, not a function-wrapped `(function(){ ... })()` - the code
-   * this wraps relies on DoScript's own "value of the last executed
-   * statement" convention for its normal (non-error) return value, which a
-   * function body would not preserve (a function's statements don't
-   * implicitly become its return value the way top-level completion values
-   * do). Only the exception path is redirected to the error file - the
-   * success path's return value is completely unaffected by this wrapper.
-   */
-  private withJsxErrorBoundary(jsxCode: string, errorFilePath: string): string {
-    return (
-      `try {\n${jsxCode}\n} catch (__bridgeError) {\n` +
-      `  var __bridgeErrorFile = new File(${JSON.stringify(errorFilePath)});\n` +
-      `  __bridgeErrorFile.open('w');\n` +
-      `  __bridgeErrorFile.write(__bridgeError && __bridgeError.message ? __bridgeError.message : String(__bridgeError));\n` +
-      `  __bridgeErrorFile.close();\n` +
-      `}`
-    );
-  }
-
-  private async readErrorFile(errorFilePath: string): Promise<string | null> {
-    try {
-      const content = await readFile(errorFilePath, 'utf-8');
-      return content.trim();
-    } catch {
-      return null;
     }
   }
 
