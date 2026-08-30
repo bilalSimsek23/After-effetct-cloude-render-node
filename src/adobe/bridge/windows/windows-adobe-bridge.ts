@@ -8,7 +8,6 @@ import type { IAdobeBridge } from '../adobe-bridge.js';
 import { JsxExecutionError } from '../adobe-bridge.js';
 import { withJsxErrorBoundary, readJsxErrorFile } from '../jsx-error-boundary.js';
 import { withTimeout, TimeoutError } from '../../../utils/with-timeout.js';
-import { sleep } from '../../../utils/sleep.js';
 import type { Logger } from '../../../types/log.types.js';
 import type { AdobeAppId } from '../../models/adobe-app-id.js';
 import { ADOBE_APP_DESCRIPTORS } from '../../models/adobe-app.model.js';
@@ -47,35 +46,20 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 15000;
  * the very first time this bridge runs against a never-before-scripted AE
  * profile.
  */
-const SCRIPTING_PERMISSION_PREF_SECTION = 'Main Pref Section';
-const SCRIPTING_PERMISSION_PREF_KEY = 'Pref_SCRIPTING_FILE_NETWORK_SECURITY';
 /**
- * This preflight is very often the FIRST `-r` call issued against AE in a
- * given process's lifetime, meaning it — not the "real" script call after
- * it — is the one that pays AE's full cold-launch cost (splash screen,
- * MediaCore init, plugin scan) if AE wasn't already running. An earlier,
- * much shorter timeout here (5000ms) fired while AE was still on its splash
- * screen (empirically observed 2026-08-30), which — combined with
- * afterfx-cli-runner.ts not previously killing the abandoned process on
- * timeout — let a second, overlapping `-r` call collide with the still-
- * launching instance. 60s comfortably covers a real-world cold launch on
- * typical consumer hardware; once this succeeds, every later call in the
- * same process reuses the now-warm instance and needs nowhere near this
- * long (see DEFAULT_COMMAND_TIMEOUT_MS below).
+ * A programmatic auto-fix was attempted here (calling
+ * app.preferences.setPrefAsLong to flip the permission on before ever
+ * running a real script) but had to be removed: confirmed against a real
+ * Windows 11 + AE 2024 machine (2026-08-30) that
+ * app.preferences.setPrefAsLong is undefined in this AE version, so the
+ * call itself throws inside AE and pops AE's own blocking native dialog —
+ * `-r` reports back as "done" before AE actually gets around to running
+ * (and failing on) the script, so this looked like a harmless no-op from
+ * Node's side while actually leaving AE stuck behind a dialog for the rest
+ * of the process's life, breaking every subsequent call. There is no
+ * scriptable way found so far to flip this permission from outside AE; the
+ * only real fix is the manual one below.
  */
-const SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS = 60000;
-/**
- * Empirically observed (2026-08-30): even once the preflight `-r` call
- * itself completes cleanly (no timeout), the very next `-r` call fired
- * immediately after it against the same instance can come back with an
- * empty result and none of its expected side effects (e.g. a report file
- * never gets written) — as if AE silently dropped it. AE's `-r` hand-off to
- * an already-open instance appears to need a brief moment to settle before
- * it's ready to accept the next command; this delay only ever runs once
- * per process (ensureScriptingPermission itself is a once-per-process
- * no-op after the first call), so it doesn't add latency to every job.
- */
-const SCRIPTING_PERMISSION_SETTLE_DELAY_MS = 2000;
 const SCRIPTING_PERMISSION_HINT =
   'After Effects\' "Allow Scripts to Write Files and Access Network" permission appears to be off. ' +
   'Open After Effects, go to Edit > Preferences > Scripting & Expressions, check ' +
@@ -84,7 +68,6 @@ const SCRIPTING_PERMISSION_HINT =
 export class WindowsAdobeBridge implements IAdobeBridge {
   private readonly exePathCache = new Map<AdobeAppId, string>();
   private readonly cliRunner: AfterFxCliRunner;
-  private scriptingPermissionChecked = false;
 
   constructor(
     private readonly processManager: WindowsProcessManager,
@@ -139,43 +122,6 @@ export class WindowsAdobeBridge implements IAdobeBridge {
   }
 
   /**
-   * Best-effort, once per process: tries to flip the scripting permission
-   * on programmatically so a freshly-provisioned Windows machine never
-   * needs a human to click through Preferences at all. app.preferences'
-   * own get/setPrefAsLong calls are NOT gated by this same permission (only
-   * File/Folder/Socket use is) - confirmed by Adobe's own scripting API
-   * docs, though this has not yet been verified end-to-end against a real
-   * machine where the permission started OFF. If AE is already showing its
-   * blocking alert from an earlier attempt, this call will itself time out
-   * - caught and logged, never thrown, since the real, user-actionable
-   * error is the one runJsxCode/runJsxScript below raise if the permission
-   * turns out to still be off.
-   */
-  private async ensureScriptingPermission(exePath: string): Promise<void> {
-    if (this.scriptingPermissionChecked) {
-      return;
-    }
-    this.scriptingPermissionChecked = true;
-
-    try {
-      await this.cliRunner.runCode(
-        exePath,
-        `app.preferences.setPrefAsLong(${JSON.stringify(SCRIPTING_PERMISSION_PREF_SECTION)}, ${JSON.stringify(SCRIPTING_PERMISSION_PREF_KEY)}, 1);\n` +
-          'app.preferences.saveToDisk();',
-        SCRIPTING_PERMISSION_PREFLIGHT_TIMEOUT_MS,
-      );
-      this.logger.debug('Attempted to set scripting permission automatically');
-    } catch (error) {
-      this.logger.warn(
-        'Failed to set scripting permission automatically - After Effects may be waiting on a confirmation dialog',
-        { error: (error as Error).message },
-      );
-    } finally {
-      await sleep(SCRIPTING_PERMISSION_SETTLE_DELAY_MS);
-    }
-  }
-
-  /**
    * A real quit, not a kill - runs `app.quit()` through the exact same
    * `-r` transport as every other script here. Empirically confirmed
    * (2026-08-30) that `-r` against an already-running instance does NOT
@@ -217,7 +163,6 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     timeoutMs: number = DEFAULT_COMMAND_TIMEOUT_MS,
   ): Promise<string> {
     const exePath = await this.requireExePath(appId);
-    await this.ensureScriptingPermission(exePath);
     const errorFilePath = join(tmpdir(), `render-node-jsx-error-${randomUUID()}.txt`);
 
     try {
@@ -243,7 +188,6 @@ export class WindowsAdobeBridge implements IAdobeBridge {
     timeoutMs: number = DEFAULT_COMMAND_TIMEOUT_MS,
   ): Promise<string> {
     const exePath = await this.requireExePath(appId);
-    await this.ensureScriptingPermission(exePath);
     try {
       const { stdout } = await this.cliRunner.runFile(exePath, scriptPath, timeoutMs);
       return stdout;
