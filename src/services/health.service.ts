@@ -3,7 +3,6 @@ import type { Logger } from '../types/log.types.js';
 import type { HealthCheckResult } from '../types/health.types.js';
 import type { AdobeRuntimeService } from '../adobe/runtime/adobe-runtime.service.js';
 import type { IAfterEffectsEngine } from '../adobe/engines/after-effects.engine.js';
-import type { IRenderEngine } from '../adobe/engines/after-effects-render.engine.js';
 import type { AdobeWorkspaceService } from '../adobe/runtime/adobe-workspace.service.js';
 import type { ICapabilityProvider } from '../capabilities/capability-provider.interface.js';
 import type { CapabilityHardwareInfo } from '../contracts/capability-report.contract.js';
@@ -25,7 +24,6 @@ export class HealthService implements IHealthService {
   constructor(
     private readonly adobeRuntimeService: AdobeRuntimeService,
     private readonly afterEffectsEngine: IAfterEffectsEngine,
-    private readonly renderEngine: IRenderEngine,
     private readonly workspaceService: AdobeWorkspaceService,
     private readonly hardwareProvider: ICapabilityProvider<CapabilityHardwareInfo>,
     private readonly fontProvider: ICapabilityProvider<string | null>,
@@ -35,8 +33,17 @@ export class HealthService implements IHealthService {
   async checkHealth(): Promise<HealthCheckResult> {
     const checks: Record<string, boolean> = {
       adobeRuntimeReady: this.adobeRuntimeService.isReady(),
+      // No mediaEncoderReachable check here: rendering has gone through
+      // After Effects' own render queue (RenderQueue.renderAsync()), never
+      // Adobe Media Encoder, since Faz 8A (see AfterEffectsRenderEngine's
+      // own docblock) - requiring the Media Encoder *app* to be actively
+      // running was checking something the render pipeline no longer uses
+      // at all, so a node with AE working fine but Media Encoder closed
+      // (the normal case) was being reported as globally unhealthy for no
+      // real reason. Whether Media Encoder is *installed* is still reported
+      // separately and correctly via the Capability Registry
+      // (AdobeCapabilityProvider), independent of this per-cycle check.
       afterEffectsReachable: await this.safeCheck(() => this.afterEffectsEngine.isRunning()),
-      mediaEncoderReachable: await this.safeCheck(() => this.renderEngine.isRunning()),
       workspaceAccessible: await this.safeCheck(async () => {
         await stat(this.workspaceService.getPaths().root);
         return true;

@@ -571,7 +571,6 @@ async function run(): Promise<void> {
   const healthService = new HealthService(
     adobeRuntimeService,
     afterEffectsEngine,
-    renderEngine,
     workspaceService,
     new HardwareCapabilityProvider(logger),
     new FontCapabilityProvider(dependencyCacheFilePath, logger),
