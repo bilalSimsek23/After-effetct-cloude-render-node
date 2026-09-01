@@ -121,27 +121,33 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // screen - the immediate app.project.file check below found it still
     // empty even though the project visibly did finish converting a
     // moment later. app.open() apparently doesn't always block for the
-    // full duration of a conversion. A first attempt at polling for up to
-    // 5s wasn't enough either (still failed 3 attempts in a row on a real
-    // project, ~5s apart) - worse, each retry's own
-    // `app.project.close(...)` at the top of this same script was
-    // interrupting the PREVIOUS attempt's still-in-progress conversion
-    // before it could finish, a self-defeating loop that could never
-    // succeed no matter how many retries ran. 60s (ExtendScript's own
-    // $.sleep, 40x1.5s) gives a real conversion the time it actually
-    // needs; the outer timeout is raised to match so it doesn't cut this
-    // poll off first. An empty app.project.file after the full window
-    // still means exactly what it always meant - this only gives a
-    // real-but-slow conversion a real chance to finish uninterrupted.
+    // full duration of a conversion. A first attempt polled via
+    // `$.sleep(1500)` in a loop, but real testing proved $.sleep() does
+    // NOT actually block in this AfterFX.exe -r execution context on
+    // Windows - a real run that should have needed up to 60s instead
+    // failed in well under a second (772ms measured directly against a
+    // live render), meaning the whole 40-iteration loop was racing
+    // through with each "sleep" doing nothing at all. Busy-waiting on
+    // wall-clock time via `new Date().getTime()` instead doesn't depend on
+    // $.sleep() working at all, so it can't silently degrade back into an
+    // instant check the same way. Each retry's own leading
+    // `app.project.close(...)` was also interrupting the PREVIOUS
+    // attempt's still-in-progress conversion before it could finish, a
+    // self-defeating loop that could never succeed regardless of retry
+    // count - the outer timeout is raised to 75s to match this poll's real
+    // 60s ceiling so it doesn't cut it off first either. An empty
+    // app.project.file after the full window still means exactly what it
+    // always meant - this only gives a real-but-slow conversion an actual
+    // chance to finish uninterrupted.
     const openedFilePath = await this.bridge.runJsxCode(
       AdobeAppId.AFTER_EFFECTS,
       this.suppressDialogs(
         `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
           `app.open(File(${this.jsxString(path)})); ` +
           `var __openedPath = ''; ` +
-          `for (var __i = 0; __i < 40; __i++) { ` +
-          `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } ` +
-          `$.sleep(1500); } ` +
+          `var __deadline = (new Date()).getTime() + 60000; ` +
+          `while ((new Date()).getTime() < __deadline) { ` +
+          `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } } ` +
           `__openedPath;`,
       ),
       75000,
