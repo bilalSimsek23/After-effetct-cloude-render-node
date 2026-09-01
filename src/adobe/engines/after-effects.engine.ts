@@ -1,5 +1,7 @@
-import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile, rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import type { IAdobeBridge } from '../bridge/adobe-bridge.js';
 import type { IJsxRuntimeService } from '../../jsx/jsx-runtime.service.js';
 import { JsxScriptName } from '../../jsx/jsx-script-name.js';
@@ -139,25 +141,56 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // app.project.file after the full window still means exactly what it
     // always meant - this only gives a real-but-slow conversion an actual
     // chance to finish uninterrupted.
-    const openedFilePath = await this.bridge.runJsxCode(
-      AdobeAppId.AFTER_EFFECTS,
-      this.suppressDialogs(
-        `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
-          `app.open(File(${this.jsxString(path)})); ` +
-          `var __openedPath = ''; ` +
-          `var __deadline = (new Date()).getTime() + 60000; ` +
-          `while ((new Date()).getTime() < __deadline) { ` +
-          `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } } ` +
-          `__openedPath;`,
-      ),
-      75000,
-    );
-
-    if (!openedFilePath) {
-      throw new ProjectOpenError(
-        'app.project.file was empty after opening the project - the After Effects version-conversion dialog probably failed to actually load the project.',
-        { projectFilePath: path },
+    //
+    // Real root cause found (2026-09-01): none of the above ever actually
+    // had a chance to matter. This method used `runJsxCode()`'s returned
+    // `stdout` as `__openedPath`'s value - but AfterFxCliRunner's own
+    // docblock already documents that AE's `-r` flag has no real result
+    // channel and stdout is captured "only for logging/diagnostics, never
+    // as the actual result channel", exactly the same untrustworthy-return
+    // situation jsx-error-boundary.ts already works around for errors by
+    // having the JSX itself write to a file Node reads back. openProject()
+    // was the one caller still trusting the return value directly, so it
+    // failed identically regardless of timing, file content, or whether a
+    // version conversion was even needed - stdout never reflected
+    // __openedPath either way. Fixed by using the same file-based
+    // convention as the error boundary for the success value too.
+    const resultFilePath = join(tmpdir(), `render-node-open-project-${randomUUID()}.txt`);
+    try {
+      await this.bridge.runJsxCode(
+        AdobeAppId.AFTER_EFFECTS,
+        this.suppressDialogs(
+          `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
+            `app.open(File(${this.jsxString(path)})); ` +
+            `var __openedPath = ''; ` +
+            `var __deadline = (new Date()).getTime() + 60000; ` +
+            `while ((new Date()).getTime() < __deadline) { ` +
+            `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } } ` +
+            `var __resultFile = new File(${this.jsxString(resultFilePath)}); ` +
+            `if (__resultFile.open('w')) { __resultFile.write(__openedPath); __resultFile.close(); }`,
+        ),
+        75000,
       );
+
+      const openedFilePath = await this.readOpenResultFile(resultFilePath);
+
+      if (!openedFilePath) {
+        throw new ProjectOpenError(
+          'app.project.file was empty after opening the project - the After Effects version-conversion dialog probably failed to actually load the project.',
+          { projectFilePath: path },
+        );
+      }
+    } finally {
+      await rm(resultFilePath, { force: true }).catch(() => {});
+    }
+  }
+
+  private async readOpenResultFile(resultFilePath: string): Promise<string | null> {
+    try {
+      const content = await readFile(resultFilePath, 'utf-8');
+      return content.trim() || null;
+    } catch {
+      return null;
     }
   }
 
