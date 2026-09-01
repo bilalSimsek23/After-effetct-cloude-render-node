@@ -116,12 +116,26 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // instead of only surfacing much later as save-project.jsx's cryptic
     // PROJECT_HAS_NO_FILE_PATH after an entire ApplyVariablesStage ran
     // against whatever half-loaded project was left behind.
+    // Real production failure (2026-09-01): app.open() returned control to
+    // the script before a real version-conversion had actually finished on
+    // screen - the immediate app.project.file check below found it still
+    // empty even though the project visibly did finish converting a
+    // moment later. app.open() apparently doesn't always block for the
+    // full duration of a conversion. A short poll (ExtendScript's own
+    // $.sleep, up to 5s total) gives it that extra time before concluding
+    // the load genuinely failed, without weakening the check itself - an
+    // empty app.project.file after the full poll window still means what
+    // it always meant.
     const openedFilePath = await this.bridge.runJsxCode(
       AdobeAppId.AFTER_EFFECTS,
       this.suppressDialogs(
         `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
           `app.open(File(${this.jsxString(path)})); ` +
-          `(app.project && app.project.file) ? app.project.file.fsName : '';`,
+          `var __openedPath = ''; ` +
+          `for (var __i = 0; __i < 10; __i++) { ` +
+          `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } ` +
+          `$.sleep(500); } ` +
+          `__openedPath;`,
       ),
     );
 
