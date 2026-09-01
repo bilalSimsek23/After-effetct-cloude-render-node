@@ -121,22 +121,30 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // screen - the immediate app.project.file check below found it still
     // empty even though the project visibly did finish converting a
     // moment later. app.open() apparently doesn't always block for the
-    // full duration of a conversion. A short poll (ExtendScript's own
-    // $.sleep, up to 5s total) gives it that extra time before concluding
-    // the load genuinely failed, without weakening the check itself - an
-    // empty app.project.file after the full poll window still means what
-    // it always meant.
+    // full duration of a conversion. A first attempt at polling for up to
+    // 5s wasn't enough either (still failed 3 attempts in a row on a real
+    // project, ~5s apart) - worse, each retry's own
+    // `app.project.close(...)` at the top of this same script was
+    // interrupting the PREVIOUS attempt's still-in-progress conversion
+    // before it could finish, a self-defeating loop that could never
+    // succeed no matter how many retries ran. 60s (ExtendScript's own
+    // $.sleep, 40x1.5s) gives a real conversion the time it actually
+    // needs; the outer timeout is raised to match so it doesn't cut this
+    // poll off first. An empty app.project.file after the full window
+    // still means exactly what it always meant - this only gives a
+    // real-but-slow conversion a real chance to finish uninterrupted.
     const openedFilePath = await this.bridge.runJsxCode(
       AdobeAppId.AFTER_EFFECTS,
       this.suppressDialogs(
         `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
           `app.open(File(${this.jsxString(path)})); ` +
           `var __openedPath = ''; ` +
-          `for (var __i = 0; __i < 10; __i++) { ` +
+          `for (var __i = 0; __i < 40; __i++) { ` +
           `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } ` +
-          `$.sleep(500); } ` +
+          `$.sleep(1500); } ` +
           `__openedPath;`,
       ),
+      75000,
     );
 
     if (!openedFilePath) {
