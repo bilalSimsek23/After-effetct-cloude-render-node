@@ -126,31 +126,32 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // PROJECT_HAS_NO_FILE_PATH after an entire ApplyVariablesStage ran
     // against whatever half-loaded project was left behind.
     // Real production failure (2026-09-01): app.open() returned control to
-    // the script before a real version-conversion had actually finished on
-    // screen - the immediate app.project.file check found it still empty
-    // even though the project visibly did finish converting a moment
-    // later. app.open() apparently doesn't always block for the full
-    // duration of a conversion, so we have to poll for app.project.file.
-    // The result is read back through a temp file, not runJsxCode()'s
-    // return value - AE's `-r` flag has no trustworthy stdout result
-    // channel (same file-based convention jsx-error-boundary.ts uses).
+    // the script before a real version-conversion had actually finished,
+    // so we have to poll after it. The result is read back through a temp
+    // file, not runJsxCode()'s return value - AE's `-r` flag has no
+    // trustworthy stdout result channel (same file-based convention
+    // jsx-error-boundary.ts uses).
     //
-    // Real production REGRESSION (2026-09-05): commit 6e0c9e4 moved that
-    // poll into a single DoScript with a `while` busy-wait on
-    // `new Date().getTime()`, to dodge a Windows bug where $.sleep()
-    // no-ops under `AfterFX.exe -r`. But on macOS, DoScript runs the JSX
-    // on After Effects' single UI thread, and a tight `while` loop pins
-    // that thread - so the version-conversion, which needs the same
-    // thread, can NEVER finish. The loop just spins the full 60s,
-    // app.project.file stays empty, PROJECT_003. A project file that
-    // rendered fine before that commit stopped opening entirely.
+    // Regression 1 (fixed 2026-09-05): commit 6e0c9e4 did that poll as an
+    // in-ExtendScript `while` busy-wait, to dodge a Windows bug where
+    // $.sleep() no-ops. On macOS, DoScript runs the JSX on AE's single UI
+    // thread, so a tight `while` loop pins it and the conversion (needs
+    // that thread) can never make progress. Fix: poll from NODE - one
+    // cheap sub-second DoScript per probe, a real `await sleep()` between,
+    // so between probes AE's thread is completely free.
     //
-    // Fix: don't loop inside ExtendScript at all. Fire app.open() in its
-    // own DoScript, return to Node, then poll app.project.file from NODE
-    // with a real `await sleep()` between checks. Each probe is its own
-    // sub-second DoScript; between them AE's UI thread is completely free,
-    // so the conversion actually progresses - on both macOS and Windows,
-    // without depending on any in-ExtendScript sleep primitive.
+    // Regression 2 (fixed 2026-09-05, the real PROJECT_003): the poll
+    // checked `app.project.file`. But a project AE had to convert from an
+    // older version opens with `app.project.file === null` *permanently* -
+    // AE keeps the original .aep untouched, the converted in-memory
+    // project has no file of its own (see save-project.jsx's docblock;
+    // confirmed live against Clean Logo mid-open: `proj=yes numItems=37
+    // file=NULL activeItem="Final Comp"` - fully loaded, just no file
+    // path). So the `!openedFilePath` check failed 100% of the time on
+    // every converted project even though it was completely renderable.
+    // The real "did it open" signal is a project WITH CONTENT
+    // (app.project.numItems > 0); the missing file path is already handled
+    // downstream by save-project.jsx's fallbackPath Save-As.
     await this.bridge.runJsxCode(
       AdobeAppId.AFTER_EFFECTS,
       this.suppressDialogs(
@@ -161,40 +162,52 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     );
 
     const deadline = Date.now() + OPEN_PROJECT_CONVERT_CEILING_MS;
-    let openedFilePath = await this.readOpenedProjectFilePath();
-    while (!openedFilePath && Date.now() < deadline) {
+    let state = await this.readOpenedProjectState();
+    while (!state.loaded && Date.now() < deadline) {
       await sleep(OPEN_PROJECT_POLL_INTERVAL_MS);
-      openedFilePath = await this.readOpenedProjectFilePath();
+      state = await this.readOpenedProjectState();
     }
 
-    if (!openedFilePath) {
+    if (!state.loaded) {
       throw new ProjectOpenError(
-        `app.project.file was still empty ${Math.round(OPEN_PROJECT_CONVERT_CEILING_MS / 1000)}s ` +
-          `after opening the project - the After Effects version-conversion never completed.`,
+        `no project with content was loaded ${Math.round(OPEN_PROJECT_CONVERT_CEILING_MS / 1000)}s ` +
+          `after app.open() - the project failed to open or convert.`,
         { projectFilePath: path },
       );
     }
+
+    this.logger.info('Project opened', {
+      projectFilePath: path,
+      // null for a version-converted project - expected, not an error.
+      aeFilePath: state.filePath,
+    });
   }
 
   /**
-   * One cheap DoScript: ExtendScript writes app.project.file.fsName (or ''
-   * when there's no open project or no file path yet) to a temp file that
-   * Node reads back. Returns null for "not open yet" so the caller can
-   * keep polling; a non-null path means the project is really loaded.
+   * One cheap DoScript: ExtendScript reports whether a real project (with
+   * content) is loaded, plus its file path if it has one (a
+   * version-converted project has none). Read back via a temp file, not
+   * runJsxCode()'s untrustworthy return value.
    */
-  private async readOpenedProjectFilePath(): Promise<string | null> {
+  private async readOpenedProjectState(): Promise<{ loaded: boolean; filePath: string | null }> {
     const resultFilePath = join(tmpdir(), `render-node-open-project-${randomUUID()}.txt`);
     try {
       await this.bridge.runJsxCode(
         AdobeAppId.AFTER_EFFECTS,
         this.suppressDialogs(
-          `var __openedPath = (app.project && app.project.file) ? app.project.file.fsName : ''; ` +
+          `var __loaded = (app.project && app.project.numItems > 0) ? '1' : '0'; ` +
+            `var __path = (app.project && app.project.file) ? app.project.file.fsName : ''; ` +
             `var __resultFile = new File(${this.jsxString(resultFilePath)}); ` +
-            `if (__resultFile.open('w')) { __resultFile.write(__openedPath); __resultFile.close(); }`,
+            `if (__resultFile.open('w')) { __resultFile.write(__loaded + '\\n' + __path); __resultFile.close(); }`,
         ),
         OPEN_PROJECT_PROBE_TIMEOUT_MS,
       );
-      return await this.readOpenResultFile(resultFilePath);
+      const raw = await this.readOpenResultFile(resultFilePath);
+      if (raw === null) return { loaded: false, filePath: null };
+      const newlineIndex = raw.indexOf('\n');
+      const loadedFlag = newlineIndex === -1 ? raw : raw.slice(0, newlineIndex);
+      const filePath = newlineIndex === -1 ? '' : raw.slice(newlineIndex + 1).trim();
+      return { loaded: loadedFlag.trim() === '1', filePath: filePath || null };
     } finally {
       await rm(resultFilePath, { force: true }).catch(() => {});
     }
