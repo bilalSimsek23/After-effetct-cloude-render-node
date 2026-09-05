@@ -17,6 +17,13 @@ const READY_POLL_INTERVAL_MS = 500;
 const DEFAULT_READY_TIMEOUT_MS = 60000;
 const READY_PROBE_TIMEOUT_MS = 8000;
 
+// openProject(): the app.open() DoScript, then a NODE-side poll for
+// app.project.file while a version-conversion finishes on AE's own thread.
+const OPEN_PROJECT_OPEN_TIMEOUT_MS = 75000;
+const OPEN_PROJECT_CONVERT_CEILING_MS = 60000;
+const OPEN_PROJECT_POLL_INTERVAL_MS = 1500;
+const OPEN_PROJECT_PROBE_TIMEOUT_MS = 8000;
+
 export interface IAfterEffectsEngine {
   initialize(): Promise<void>;
   shutdown(): Promise<void>;
@@ -120,66 +127,74 @@ export class AfterEffectsEngine implements IAfterEffectsEngine {
     // against whatever half-loaded project was left behind.
     // Real production failure (2026-09-01): app.open() returned control to
     // the script before a real version-conversion had actually finished on
-    // screen - the immediate app.project.file check below found it still
-    // empty even though the project visibly did finish converting a
-    // moment later. app.open() apparently doesn't always block for the
-    // full duration of a conversion. A first attempt polled via
-    // `$.sleep(1500)` in a loop, but real testing proved $.sleep() does
-    // NOT actually block in this AfterFX.exe -r execution context on
-    // Windows - a real run that should have needed up to 60s instead
-    // failed in well under a second (772ms measured directly against a
-    // live render), meaning the whole 40-iteration loop was racing
-    // through with each "sleep" doing nothing at all. Busy-waiting on
-    // wall-clock time via `new Date().getTime()` instead doesn't depend on
-    // $.sleep() working at all, so it can't silently degrade back into an
-    // instant check the same way. Each retry's own leading
-    // `app.project.close(...)` was also interrupting the PREVIOUS
-    // attempt's still-in-progress conversion before it could finish, a
-    // self-defeating loop that could never succeed regardless of retry
-    // count - the outer timeout is raised to 75s to match this poll's real
-    // 60s ceiling so it doesn't cut it off first either. An empty
-    // app.project.file after the full window still means exactly what it
-    // always meant - this only gives a real-but-slow conversion an actual
-    // chance to finish uninterrupted.
+    // screen - the immediate app.project.file check found it still empty
+    // even though the project visibly did finish converting a moment
+    // later. app.open() apparently doesn't always block for the full
+    // duration of a conversion, so we have to poll for app.project.file.
+    // The result is read back through a temp file, not runJsxCode()'s
+    // return value - AE's `-r` flag has no trustworthy stdout result
+    // channel (same file-based convention jsx-error-boundary.ts uses).
     //
-    // Real root cause found (2026-09-01): none of the above ever actually
-    // had a chance to matter. This method used `runJsxCode()`'s returned
-    // `stdout` as `__openedPath`'s value - but AfterFxCliRunner's own
-    // docblock already documents that AE's `-r` flag has no real result
-    // channel and stdout is captured "only for logging/diagnostics, never
-    // as the actual result channel", exactly the same untrustworthy-return
-    // situation jsx-error-boundary.ts already works around for errors by
-    // having the JSX itself write to a file Node reads back. openProject()
-    // was the one caller still trusting the return value directly, so it
-    // failed identically regardless of timing, file content, or whether a
-    // version conversion was even needed - stdout never reflected
-    // __openedPath either way. Fixed by using the same file-based
-    // convention as the error boundary for the success value too.
+    // Real production REGRESSION (2026-09-05): commit 6e0c9e4 moved that
+    // poll into a single DoScript with a `while` busy-wait on
+    // `new Date().getTime()`, to dodge a Windows bug where $.sleep()
+    // no-ops under `AfterFX.exe -r`. But on macOS, DoScript runs the JSX
+    // on After Effects' single UI thread, and a tight `while` loop pins
+    // that thread - so the version-conversion, which needs the same
+    // thread, can NEVER finish. The loop just spins the full 60s,
+    // app.project.file stays empty, PROJECT_003. A project file that
+    // rendered fine before that commit stopped opening entirely.
+    //
+    // Fix: don't loop inside ExtendScript at all. Fire app.open() in its
+    // own DoScript, return to Node, then poll app.project.file from NODE
+    // with a real `await sleep()` between checks. Each probe is its own
+    // sub-second DoScript; between them AE's UI thread is completely free,
+    // so the conversion actually progresses - on both macOS and Windows,
+    // without depending on any in-ExtendScript sleep primitive.
+    await this.bridge.runJsxCode(
+      AdobeAppId.AFTER_EFFECTS,
+      this.suppressDialogs(
+        `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
+          `app.open(File(${this.jsxString(path)}));`,
+      ),
+      OPEN_PROJECT_OPEN_TIMEOUT_MS,
+    );
+
+    const deadline = Date.now() + OPEN_PROJECT_CONVERT_CEILING_MS;
+    let openedFilePath = await this.readOpenedProjectFilePath();
+    while (!openedFilePath && Date.now() < deadline) {
+      await sleep(OPEN_PROJECT_POLL_INTERVAL_MS);
+      openedFilePath = await this.readOpenedProjectFilePath();
+    }
+
+    if (!openedFilePath) {
+      throw new ProjectOpenError(
+        `app.project.file was still empty ${Math.round(OPEN_PROJECT_CONVERT_CEILING_MS / 1000)}s ` +
+          `after opening the project - the After Effects version-conversion never completed.`,
+        { projectFilePath: path },
+      );
+    }
+  }
+
+  /**
+   * One cheap DoScript: ExtendScript writes app.project.file.fsName (or ''
+   * when there's no open project or no file path yet) to a temp file that
+   * Node reads back. Returns null for "not open yet" so the caller can
+   * keep polling; a non-null path means the project is really loaded.
+   */
+  private async readOpenedProjectFilePath(): Promise<string | null> {
     const resultFilePath = join(tmpdir(), `render-node-open-project-${randomUUID()}.txt`);
     try {
       await this.bridge.runJsxCode(
         AdobeAppId.AFTER_EFFECTS,
         this.suppressDialogs(
-          `if (app.project) { app.project.close(CloseOptions.DO_NOT_SAVE_CHANGES); } ` +
-            `app.open(File(${this.jsxString(path)})); ` +
-            `var __openedPath = ''; ` +
-            `var __deadline = (new Date()).getTime() + 60000; ` +
-            `while ((new Date()).getTime() < __deadline) { ` +
-            `if (app.project && app.project.file) { __openedPath = app.project.file.fsName; break; } } ` +
+          `var __openedPath = (app.project && app.project.file) ? app.project.file.fsName : ''; ` +
             `var __resultFile = new File(${this.jsxString(resultFilePath)}); ` +
             `if (__resultFile.open('w')) { __resultFile.write(__openedPath); __resultFile.close(); }`,
         ),
-        75000,
+        OPEN_PROJECT_PROBE_TIMEOUT_MS,
       );
-
-      const openedFilePath = await this.readOpenResultFile(resultFilePath);
-
-      if (!openedFilePath) {
-        throw new ProjectOpenError(
-          'app.project.file was empty after opening the project - the After Effects version-conversion dialog probably failed to actually load the project.',
-          { projectFilePath: path },
-        );
-      }
+      return await this.readOpenResultFile(resultFilePath);
     } finally {
       await rm(resultFilePath, { force: true }).catch(() => {});
     }
